@@ -1,2 +1,5 @@
 preprocess/pkl
 preprocess/raw
+.idea
+.git
+__pycache__
