@@ -157,15 +157,16 @@ def _rog_quantile_curve(df, quantile, eval_x):
 class BuildCache:
     def __init__(self, data_conf, is_training):
         self.is_training = is_training
-        self._data_conf = data_conf
+        self.data_conf = data_conf
+        self.cache_path = data_conf.cache_path
         self._log = logging.getLogger(__name__)
         self._init_metadata()
 
     def _init_metadata(self):
         """Process metadata.csv with filtering configuration"""
 
-        filter_conf = self._data_conf.filtering
-        pdb_csv = pd.read_csv(self._data_conf.csv_path)
+        filter_conf = self.data_conf.filtering
+        pdb_csv = pd.read_csv(self.data_conf.csv_path)
 
         if (
             filter_conf.allowed_oligomer is not None
@@ -214,14 +215,14 @@ class BuildCache:
         else:
             all_lengths = np.sort(pdb_csv.modeled_seq_len.unique())
             length_indices = (len(all_lengths) - 1) * np.linspace(
-                0.0, 1.0, self._data_conf.num_eval_lengths
+                0.0, 1.0, self.data_conf.num_eval_lengths
             )
             length_indices = length_indices.astype(int)
             eval_lengths = all_lengths[length_indices]
             eval_csv = pdb_csv[pdb_csv.modeled_seq_len.isin(eval_lengths)]
             # Fix a random seed to get the same split each time.
             eval_csv = eval_csv.groupby("modeled_seq_len").sample(
-                self._data_conf.samples_per_eval_length, replace=True, random_state=123
+                self.data_conf.samples_per_eval_length, replace=True, random_state=123
             )
             eval_csv = eval_csv.sort_values("modeled_seq_len", ascending=False)
             self.csv = eval_csv
@@ -232,26 +233,25 @@ class BuildCache:
     def _build_dataset_cache_v2(self):
         print(
             f"Starting to process dataset csv into memory "
-            f"(cache_dataset_in_memory {self._cache_dataset_in_memory})"
         )
         print(f"ROWS {len(self.csv)}")
         # self.csv = self.csv.iloc[:500]
         print(f"Running only {len(self.csv)}")
 
         build_local_cache = True
-        if os.path.isdir(self._cache_path):
+        if os.path.isdir(self.cache_path):
             build_local_cache = False
-            print(f"Found local cache @ {self._cache_path}, skipping build")
+            print(f"Found local cache @ {self.cache_path}, skipping build")
 
         # Initialize local cache with lmdb
         self._local_cache = lmdb.open(
-            self._cache_path, map_size=(1024**3) * 60
+            self.cache_path, map_size=(1024**3) * 60
         )  # 1GB * 60
 
         st_time = time.time()
 
         if build_local_cache:
-            print(f"Building cache and saving @ {self._cache_path}")
+            print(f"Building cache and saving @ {self.cache_path}")
 
             dataset_size = len(self.csv)
             num_chunks = math.ceil(
@@ -285,20 +285,9 @@ class BuildCache:
                             # print(f"RUNNING {start_idx} {end_idx} : chunks  {idx_chunks[idx]}")
                             for inner_idx in tqdm(range(start_idx, end_idx)):
                                 txn.put(str(inner_idx).encode(), shared_list[inner_idx])
-
-                                if self._cache_dataset_in_memory:
-                                    result_tuples[inner_idx] = pickle.loads(
-                                        shared_list[inner_idx]
-                                    )
-
                                 shared_list[inner_idx] = ""
                                 pbar.update(1)
-        elif self._cache_dataset_in_memory:
-            print(f"Loading cache from local dataset @ {self._cache_path}")
-            result_tuples = [None] * len(self.csv)
-            with self._local_cache.begin() as txn:
-                for ix in range(len(self.csv)):
-                    result_tuples[ix] = pickle.loads(txn.get(str(ix).encode()))
+
 
 
 
