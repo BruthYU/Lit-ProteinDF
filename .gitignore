@@ -3,3 +3,4 @@ preprocess/raw
 .idea
 .git
 __pycache__
+preprocess/grammar.py
