@@ -4,3 +4,4 @@ preprocess/raw
 .git
 __pycache__
 preprocess/grammar.py
+preprocess/.cache

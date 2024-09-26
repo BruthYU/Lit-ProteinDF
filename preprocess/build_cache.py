@@ -288,7 +288,12 @@ class BuildCache:
                                 shared_list[inner_idx] = ""
                                 pbar.update(1)
 
-
+if __name__ == '__main__':
+    from omegaconf import OmegaConf
+    conf = OmegaConf.load('./config.yaml')
+    cache_instance = BuildCache(conf, is_training=True)
+    cache_instance._build_dataset_cache_v2()
+    pass
 
 
 
