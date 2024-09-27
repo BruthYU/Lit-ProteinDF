@@ -5,7 +5,7 @@ import torch.optim.lr_scheduler as lrs
 import pytorch_lightning as pl
 import os
 import torch.nn as nn
-from utils.utils import get_text_logger
+from lightning.utils.utils import get_text_logger
 from src.graph_lib import Absorbing, Uniform
 from src.noise_lib import LogLinearNoise, GeometricNoise
 from src.sampling import Denoiser, get_predictor

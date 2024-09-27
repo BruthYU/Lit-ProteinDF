@@ -3,7 +3,8 @@ import importlib
 import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader
-from utils.utils import cuda
+from lightning.utils.utils import cuda
+
 
 class MyDataLoader(DataLoader):
     '''
@@ -38,15 +39,15 @@ def collate_fn(examples):
 
 class DInterface(pl.LightningDataModule):
     def __init__(self, num_workers=8,
-                 dataset='PDB',
+                 method='FrameDiff',
                  **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.num_workers = num_workers
-        self.dataset = dataset
+        self.method = method
         self.kwargs = kwargs
         self.batch_size = kwargs['batch_size']
-        self.data_module = self.init_data_module(dataset)
+        self.data_module = self.init_data_module(method)
         self.device = 'cuda:0'
 
     def setup(self, stage=None):
