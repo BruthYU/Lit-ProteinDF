@@ -14,13 +14,11 @@ import multiprocessing as mp
 import os
 import time
 
-import mdtraj as md
 import numpy as np
 import pandas as pd
-from Bio.PDB import PDBIO, MMCIFParser
-from tqdm import tqdm
 
-from tools import utils as du, errors, parsers, mmcif_parsing
+
+from preprocess.tools import utils as du, errors, parsers
 
 # Define the parser
 parser = argparse.ArgumentParser(
@@ -28,7 +26,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '--jsonl_path',
     help='Path to jsonl files.',
-    type=str)
+    type=str,
+    default='./raw/chain_set.jsonl')
 parser.add_argument(
     '--max_file_size',
     help='Max file size.',
@@ -58,7 +57,7 @@ parser.add_argument(
     '--write_dir',
     help='Path to write results to.',
     type=str,
-    default='./data/processed_pdb')
+    default='./pkl/jsonl')
 parser.add_argument(
     '--debug',
     help='Turn on for debugging.',
@@ -87,10 +86,8 @@ def process_line(line, max_len: int, write_dir: str):
     line_name = line['name']
 
     metadata['pdb_name'] = line_name
-    line_subdir = os.path.join(write_dir, line_name)
-    if not os.path.isdir(line_subdir):
-        os.mkdir(line_subdir)
-    processed_line_path = os.path.join(line_subdir, f'{line_name}.pkl')
+
+    processed_line_path = os.path.join(write_dir, f'{line_name}.pkl')
     processed_line_path = os.path.abspath(processed_line_path)
     metadata['processed_path'] = processed_line_path
 
@@ -99,6 +96,7 @@ def process_line(line, max_len: int, write_dir: str):
 
 
     # Extract all chains
+    # chain_id is the last char of the line name
     struct_chains = {line_name.split('.')[-1].upper(): line}
     metadata['num_chains'] = len(struct_chains)
 

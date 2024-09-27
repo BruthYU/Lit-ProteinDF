@@ -240,8 +240,9 @@ class BuildCache:
 
         build_local_cache = True
         if os.path.isdir(self.cache_path):
-            build_local_cache = False
-            print(f"Found local cache @ {self.cache_path}, skipping build")
+            raise ValueError(f"Found existing local cache dir @ {self.cache_path}, skipping build")
+
+        os.makedirs(self.cache_path)
 
         # Initialize local cache with lmdb
         self._local_cache = lmdb.open(

@@ -1,63 +1,44 @@
-"""Script for preprocessing pdb/mmcif files for faster consumption.
+"""Script for preprocessing PDB files.
 
-- Parses all mmcif protein files in a directory.
-- Filters out low resolution files.
-- Performs any additional processing.
-- Writes all processed examples out to specified path.
+WARNING: NOT TESTED WITH SE(3) DIFFUSION.
+This is example code of how to preprocess PDB files.
+It does not process extra features that are used in process_pdb_dataset.py.
+One can use the logic here to create a version of process_pdb_dataset.py
+that works on PDB files.
+
 """
 
 import argparse
 import dataclasses
 import functools as fn
-import multiprocessing as mp
-import os
-import time
-
-import mdtraj as md
-import numpy as np
 import pandas as pd
-from Bio.PDB import PDBIO, MMCIFParser
-from tqdm import tqdm
+import os
+import multiprocessing as mp
+import time
+from Bio import PDB
+import numpy as np
+import mdtraj as md
 
-from tools import mmcif_parsing, parsers, errors, utils as du
+from preprocess.tools import utils as du, errors, parsers
 
 # Define the parser
 parser = argparse.ArgumentParser(
-    description='mmCIF processing script.')
+    description='PDB processing script.')
 parser.add_argument(
-    '--mmcif_dir',
-    help='Path to directory with mmcif files.',
-    type=str)
-parser.add_argument(
-    '--max_file_size',
-    help='Max file size.',
-    type=int,
-    default=3000000)  # Only process files up to 3MB large.
-parser.add_argument(
-    '--min_file_size',
-    help='Min file size.',
-    type=int,
-    default=1000)  # Files must be at least 1KB.
-parser.add_argument(
-    '--max_resolution',
-    help='Max resolution of files.',
-    type=float,
-    default=5.0)
-parser.add_argument(
-    '--max_len',
-    help='Max length of protein.',
-    type=int,
-    default=512)
+    '--pdb_dir',
+    help='Path to directory with PDB files.',
+    type=str,
+    default='./raw/pdb')
 parser.add_argument(
     '--num_processes',
     help='Number of processes.',
     type=int,
-    default=100)
+    default=50)
 parser.add_argument(
     '--write_dir',
     help='Path to write results to.',
     type=str,
-    default='./data/processed_pdb')
+    default='./pkl/pdb')
 parser.add_argument(
     '--debug',
     help='Turn on for debugging.',
@@ -68,39 +49,11 @@ parser.add_argument(
     action='store_true')
 
 
-def _retrieve_mmcif_files(
-        mmcif_dir: str, max_file_size: int, min_file_size: int, debug: bool):
-    """Set up all the mmcif files to read."""
-    print('Gathering mmCIF paths')
-    total_num_files = 0
-    all_mmcif_paths = []
-    for subdir in tqdm(os.listdir(mmcif_dir)):
-        mmcif_file_dir = os.path.join(mmcif_dir, subdir)
-        if not os.path.isdir(mmcif_file_dir):
-            continue
-        for mmcif_file in os.listdir(mmcif_file_dir):
-            if not mmcif_file.endswith('.cif'):
-                continue
-            mmcif_path = os.path.join(mmcif_file_dir, mmcif_file)
-            total_num_files += 1
-            if min_file_size <= os.path.getsize(mmcif_path) <= max_file_size:
-                all_mmcif_paths.append(mmcif_path)
-        if debug and total_num_files >= 100:
-            # Don't process all files for debugging
-            break
-    print(
-        f'Processing {len(all_mmcif_paths)} files our of {total_num_files}')
-    return all_mmcif_paths
-
-
-def process_mmcif(
-        mmcif_path: str, max_resolution: int, max_len: int, write_dir: str):
-    """Processes MMCIF files into usable, smaller pickles.
+def process_file(file_path: str, write_dir: str):
+    """Processes protein file into usable, smaller pickles.
 
     Args:
-        mmcif_path: Path to mmcif file to read.
-        max_resolution: Max resolution to allow.
-        max_len: Max length to allow.
+        file_path: Path to file to read.
         write_dir: Directory to write pickles to.
 
     Returns:
@@ -111,58 +64,19 @@ def process_mmcif(
         All other errors are unexpected and are propogated.
     """
     metadata = {}
-    mmcif_name = os.path.basename(mmcif_path).replace('.cif', '')
-    metadata['pdb_name'] = mmcif_name
-    mmcif_subdir = os.path.join(write_dir, mmcif_name[1:3].lower())
-    if not os.path.isdir(mmcif_subdir):
-        os.mkdir(mmcif_subdir)
-    processed_mmcif_path = os.path.join(mmcif_subdir, f'{mmcif_name}.pkl')
-    processed_mmcif_path = os.path.abspath(processed_mmcif_path)
-    metadata['processed_path'] = processed_mmcif_path
-    try:
-        with open(mmcif_path, 'r') as f:
-            parsed_mmcif = mmcif_parsing.parse(
-                file_id=mmcif_name, mmcif_string=f.read())
-    except:
-        raise errors.FileExistsError(
-            f'Error file do not exist {mmcif_path}'
-        )
-    metadata['raw_path'] = mmcif_path
-    if parsed_mmcif.errors:
-        raise errors.MmcifParsingError(
-            f'Encountered errors {parsed_mmcif.errors}'
-        )
-    parsed_mmcif = parsed_mmcif.mmcif_object
-    raw_mmcif = parsed_mmcif.raw_string
-    if '_pdbx_struct_assembly.oligomeric_count' in raw_mmcif:
-        raw_olig_count = raw_mmcif['_pdbx_struct_assembly.oligomeric_count']
-        oligomeric_count = ','.join(raw_olig_count).lower()
-    else:
-        oligomeric_count = None
-    if '_pdbx_struct_assembly.oligomeric_details' in raw_mmcif:
-        raw_olig_detail = raw_mmcif['_pdbx_struct_assembly.oligomeric_details']
-        oligomeric_detail = ','.join(raw_olig_detail).lower()
-    else:
-        oligomeric_detail = None
-    metadata['oligomeric_count'] = oligomeric_count
-    metadata['oligomeric_detail'] = oligomeric_detail
+    pdb_name = os.path.basename(file_path).replace('.pdb', '')
+    metadata['pdb_name'] = pdb_name
 
-    # Parse mmcif header
-    mmcif_header = parsed_mmcif.header
-    mmcif_resolution = mmcif_header['resolution']
-    metadata['resolution'] = mmcif_resolution
-    metadata['structure_method'] = mmcif_header['structure_method']
-    if mmcif_resolution >= max_resolution:
-        raise errors.ResolutionError(
-            f'Too high resolution {mmcif_resolution}')
-    if mmcif_resolution == 0.0:
-        raise errors.ResolutionError(
-            f'Invalid resolution {mmcif_resolution}')
+    processed_path = os.path.join(write_dir, f'{pdb_name}.pkl')
+    metadata['processed_path'] = os.path.abspath(processed_path)
+    metadata['raw_path'] = file_path
+    parser = PDB.PDBParser(QUIET=True)
+    structure = parser.get_structure(pdb_name, file_path)
 
     # Extract all chains
     struct_chains = {
         chain.id.upper(): chain
-        for chain in parsed_mmcif.structure.get_chains()}
+        for chain in structure.get_chains()}
     metadata['num_chains'] = len(struct_chains)
 
     # Extract features
@@ -184,39 +98,24 @@ def process_mmcif(
 
     # Process geometry features
     complex_aatype = complex_feats['aatype']
+    metadata['seq_len'] = len(complex_aatype)
     modeled_idx = np.where(complex_aatype != 20)[0]
     if np.sum(complex_aatype != 20) == 0:
         raise errors.LengthError('No modeled residues')
     min_modeled_idx = np.min(modeled_idx)
     max_modeled_idx = np.max(modeled_idx)
-    metadata['seq_len'] = len(complex_aatype)
     metadata['modeled_seq_len'] = max_modeled_idx - min_modeled_idx + 1
     complex_feats['modeled_idx'] = modeled_idx
-    if complex_aatype.shape[0] > max_len:
-        raise errors.LengthError(
-            f'Too long {complex_aatype.shape[0]}')
 
     try:
-        
-        # Workaround for MDtraj not supporting mmcif in their latest release.
-        # MDtraj source does support mmcif https://github.com/mdtraj/mdtraj/issues/652
-        # We temporarily save the mmcif as a pdb and delete it after running mdtraj.
-        p = MMCIFParser()
-        struc = p.get_structure("", mmcif_path)
-        io = PDBIO()
-        io.set_structure(struc)
-        pdb_path = mmcif_path.replace('.cif', '.pdb')
-        io.save(pdb_path)
-
         # MDtraj
-        traj = md.load(pdb_path)
+        traj = md.load(file_path)
         # SS calculation
         pdb_ss = md.compute_dssp(traj, simplified=True)
         # DG calculation
         pdb_dg = md.compute_rg(traj)
-        os.remove(pdb_path)
     except Exception as e:
-        os.remove(pdb_path)
+        os.remove(file_path)
         raise errors.DataError(f'Mdtraj failed with error {e}')
 
     chain_dict['ss'] = pdb_ss[0]
@@ -227,59 +126,54 @@ def process_mmcif(
     # Radius of gyration
     metadata['radius_gyration'] = pdb_dg[0]
 
+
     # Write features to pickles.
-    du.write_pkl(processed_mmcif_path, complex_feats)
+    du.write_pkl(processed_path, complex_feats)
 
     # Return metadata
     return metadata
 
 
-def process_serially(
-        all_mmcif_paths, max_resolution, max_len, write_dir):
+def process_serially(all_paths, write_dir):
     all_metadata = []
-    for i, mmcif_path in enumerate(all_mmcif_paths):
+    for i, file_path in enumerate(all_paths):
         try:
             start_time = time.time()
-            metadata = process_mmcif(
-                mmcif_path,
-                max_resolution,
-                max_len,
+            metadata = process_file(
+                file_path,
                 write_dir)
             elapsed_time = time.time() - start_time
-            print(f'Finished {mmcif_path} in {elapsed_time:2.2f}s')
+            print(f'Finished {file_path} in {elapsed_time:2.2f}s')
             all_metadata.append(metadata)
         except errors.DataError as e:
-            print(f'Failed {mmcif_path}: {e}')
+            print(f'Failed {file_path}: {e}')
     return all_metadata
 
 
 def process_fn(
-        mmcif_path,
+        file_path,
         verbose=None,
-        max_resolution=None,
-        max_len=None,
         write_dir=None):
     try:
         start_time = time.time()
-        metadata = process_mmcif(
-            mmcif_path,
-            max_resolution,
-            max_len,
+        metadata = process_file(
+            file_path,
             write_dir)
         elapsed_time = time.time() - start_time
         if verbose:
-            print(f'Finished {mmcif_path} in {elapsed_time:2.2f}s')
+            print(f'Finished {file_path} in {elapsed_time:2.2f}s')
         return metadata
     except errors.DataError as e:
-        print(f'Failed {mmcif_path}: {e}')
-
+        if verbose:
+            print(f'Failed {file_path}: {e}')
 
 
 def main(args):
-    # Get all mmcif files to read.
-    all_mmcif_paths = _retrieve_mmcif_files(
-        args.mmcif_dir, args.max_file_size, args.min_file_size, args.debug)
-    total_num_paths = len(all_mmcif_paths)
+    pdb_dir = args.pdb_dir
+    all_file_paths = [
+        os.path.join(pdb_dir, x)
+        for x in os.listdir(args.pdb_dir) if '.pdb' in x]
+    total_num_paths = len(all_file_paths)
     write_dir = args.write_dir
     if not os.path.exists(write_dir):
         os.makedirs(write_dir)
@@ -293,20 +187,15 @@ def main(args):
     # Process each mmcif file
     if args.num_processes == 1 or args.debug:
         all_metadata = process_serially(
-            all_mmcif_paths,
-            args.max_resolution,
-            args.max_len,
+            all_file_paths,
             write_dir)
     else:
         _process_fn = fn.partial(
             process_fn,
             verbose=args.verbose,
-            max_resolution=args.max_resolution,
-            max_len=args.max_len,
             write_dir=write_dir)
-        # Uses max number of available cores.
-        with mp.Pool() as pool:
-            all_metadata = pool.map(_process_fn, all_mmcif_paths)
+        with mp.Pool(processes=args.num_processes) as pool:
+            all_metadata = pool.map(_process_fn, all_file_paths)
         all_metadata = [x for x in all_metadata if x is not None]
     metadata_df = pd.DataFrame(all_metadata)
     metadata_df.to_csv(metadata_path, index=False)

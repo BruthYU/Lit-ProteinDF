@@ -166,7 +166,7 @@ def process_mmcif(
     for chain_id, chain in struct_chains.items():
         # Convert chain id into int
         chain_id = du.chain_str_to_int(chain_id)
-        chain_prot = parsers.process_chain_mmcif(chain, chain_id)
+        chain_prot = parsers.process_chain(chain, chain_id)
         chain_dict = dataclasses.asdict(chain_prot)
         chain_dict = du.parse_chain_feats(chain_dict)
         all_seqs.add(tuple(chain_dict['aatype']))
@@ -209,7 +209,6 @@ def process_mmcif(
         pdb_ss = md.compute_dssp(traj, simplified=True)
         # DG calculation
         pdb_dg = md.compute_rg(traj)
-        os.remove(pdb_path)
     except Exception as e:
         os.remove(pdb_path)
         raise errors.DataError(f'Mdtraj failed with error {e}')

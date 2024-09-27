@@ -8,7 +8,8 @@ from itertools import compress
 Protein = protein.Protein
 
 
-def process_chain_mmcif(chain: Chain, chain_id: str) -> Protein:
+
+def process_chain(chain: Chain, chain_id: str) -> Protein:
     """Convert a PDB chain object into a AlphaFold Protein instance.
     
     Forked from alphafold.common.protein.from_pdb_string
