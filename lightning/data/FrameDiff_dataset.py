@@ -6,17 +6,17 @@ import tree
 import torch
 import numpy as np
 import preprocess.tools.utils as du
-
+from lightning.data.frame_tools.framediff import se3_diffuser
 
 class FrameDiff_Dataset(Dataset):
     def __init__(self,
                  data_conf = None,
-                 diffuser = None,
+                 frame_conf = None,
                  is_training=True):
         super().__init__()
         self.data_conf = data_conf
         self.is_training = is_training
-        self.diffuser = diffuser
+        self.diffuser = se3_diffuser.SE3Diffuser(frame_conf)
 
         self.cache_dir = self.data_conf.cache_dir
         self.local_cache = None
@@ -99,4 +99,5 @@ class FrameDiff_Dataset(Dataset):
 
 
 if __name__ == '__main__':
+    from lightning.data.frame_tools.framediff import se3_diffuser
     instance = FrameDiff_Dataset()

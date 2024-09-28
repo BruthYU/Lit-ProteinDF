@@ -2,6 +2,8 @@ defaults:
   - method: framediff
 
 
+
+
 hydra:
   run:
     dir: ./hydra_outputs/${now:%Y-%m-%d_%H-%M-%S}

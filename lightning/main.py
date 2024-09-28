@@ -109,17 +109,16 @@ def load_callbacks(args):
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def run(conf: DictConfig) -> None:
-    args = create_parser()
-    pl.seed_everything(args.seed)
+
+    pl.seed_everything(conf.experiment.seed)
     
-    data_module = DInterface(**vars(args))
+    data_module = DInterface(conf)
     data_module.setup()
     
     gpu_count = torch.cuda.device_count()
-    args.steps_per_epoch = math.ceil(len(data_module.trainset)/args.batch_size/gpu_count)
-    print(f"steps_per_epoch {args.steps_per_epoch},  gpu_count {gpu_count}, batch_size {args.batch_size}")
+
     
-    model = MInterface(**vars(args))
+    model = MInterface(conf.dataset)
     
     trainer_config = {
         'devices': -1,  # Use all available GPUs

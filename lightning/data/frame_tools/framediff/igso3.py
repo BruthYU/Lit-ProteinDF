@@ -101,7 +101,7 @@ def calculate_igso3(*, num_ts=1000, num_omegas=1000, min_t=0.01, max_t=4, L=500)
 class IGSO3:
 
     def __init__(self, min_t=0.02, max_t=4, L=500, num_ts=500, num_omegas=1000,
-            cache_dir="./", recompute=False):
+            cache_dir="./frame_tools/framediff", recompute=False):
         self.min_t = min_t
         self.max_t = max_t
         self.num_ts = num_ts
@@ -115,7 +115,7 @@ class IGSO3:
 
         # If cache directory doesn't exist, create it
         if not os.path.isdir(cache_dir):
-            os.makedirs(cache_dir)
+            os.makedirs(cache_dir, exist_ok=True)
         cdf_cache = os.path.join(cache_dir, 'cdf_vals.npy')
         pdf_cache = os.path.join(cache_dir, 'pdf_vals.npy')
         pdf_angle_cache = os.path.join(cache_dir, 'pdf_angle_vals.npy')
