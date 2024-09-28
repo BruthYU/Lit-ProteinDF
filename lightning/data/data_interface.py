@@ -15,6 +15,9 @@ class DInterface(pl.LightningDataModule):
         self.method = self.data_conf.name
         self.batch_size = self.data_conf.batch_size
         self.data_module = self.init_data_module(self.method)
+
+        # import utils for to create dataloader
+        self.utils = importlib.import_module(f'utils', package=f'data.frame_tools.{self.method.lower()}')
         self.device = 'cuda:0'
 
     def setup(self, stage=None):
@@ -22,8 +25,19 @@ class DInterface(pl.LightningDataModule):
         if stage == 'fit' or stage is None:
             self.trainset = self.instancialize_module(module = self.data_module,is_training=True,
                                                       frame_conf=self.frame_conf, data_conf=self.data_conf)
+
+            '''Test the trainset in dataloader'''
+            train_loader = DataLoader(
+                    self.trainset,
+                    batch_size= 2,
+                    pin_memory=True,
+                    shuffle=True)
+
+
             self.valset = self.instancialize_module(module=self.data_module, is_training=False,
                                                       frame_conf=self.frame_conf, data_conf=self.data_conf)
+
+
 
         # Assign test dataset for use in dataloader(s)
         if stage == 'test' or stage is None:
@@ -64,7 +78,4 @@ class DInterface(pl.LightningDataModule):
         return module(**args1)
 
     def init_data_module(self, name, **other_args):
-        self.data_module = getattr(importlib.import_module(f'.{name}_dataset', package='data'), f'{name}_Dataset')
-        return self.data_module
-    
-    
+        return getattr(importlib.import_module(f'.{name}_dataset', package='data'), f'{name}_Dataset')
