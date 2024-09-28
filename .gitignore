@@ -6,3 +6,4 @@ __pycache__
 preprocess/grammar.py
 preprocess/.cache
 evaluate/eval_data
+/lightning/hydra_outputs/
