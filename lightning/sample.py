@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path_out', default='/huyuqi/lmd/TokenDiff/results/TokenDiff_baseline/pred_token', type=str)
-    parser.add_argument('--config', default='cFoldGen/results/FoldFlow_cath_baseline/configs/06-29T22-49-10-project.yaml', type=str)
+    parser.add_argument('--config', default='cFoldGen/results/FoldFlow_cath_baseline/config/06-29T22-49-10-project.yaml', type=str)
     parser.add_argument('--checkpoint', default='cFoldGen/results/FoldFlow_cath_baseline/checkpoints/best-epoch=767-val_loss=0.0622.pth', type=str)
     parser.add_argument("--batch_size", default=1, type=int)
     parser.add_argument("--steps", type=int, default=128)

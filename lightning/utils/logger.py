@@ -16,7 +16,7 @@ class SetupCallback(Callback):
 
     # 在pretrain例程开始时调用。
     def on_fit_start(self, trainer, pl_module):
-        # Create logdirs and save configs
+        # Create logdirs and save config
         os.makedirs(self.logdir, exist_ok=True)
         os.makedirs(self.ckptdir, exist_ok=True)
         os.makedirs(self.cfgdir, exist_ok=True)

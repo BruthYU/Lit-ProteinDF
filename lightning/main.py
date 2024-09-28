@@ -9,6 +9,9 @@ import argparse
 import shutil
 import pytorch_lightning as pl
 import torch
+import hydra
+from omegaconf import DictConfig
+from omegaconf import OmegaConf
 from pytorch_lightning.trainer import Trainer
 import pytorch_lightning.callbacks as plc
 import pytorch_lightning.loggers as plog
@@ -85,7 +88,7 @@ def load_callbacks(args):
 
     
     now = datetime.datetime.now().strftime("%m-%dT%H-%M-%S")
-    cfgdir = os.path.join(logdir, "configs")
+    cfgdir = os.path.join(logdir, "config")
     callbacks.append(
         SetupCallback(
                 now = now,
@@ -104,7 +107,8 @@ def load_callbacks(args):
 
 
 
-if __name__ == "__main__":
+@hydra.main(version_base=None, config_path="config", config_name="config")
+def run(conf: DictConfig) -> None:
     args = create_parser()
     pl.seed_everything(args.seed)
     
@@ -145,3 +149,7 @@ if __name__ == "__main__":
     trainer.fit(model, data_module)
     
     print(trainer_config)
+
+
+if __name__ == '__main__':
+    run()
