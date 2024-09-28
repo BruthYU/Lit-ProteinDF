@@ -17,7 +17,7 @@ class DInterface(pl.LightningDataModule):
         self.data_module = self.init_data_module(self.method)
 
         # import utils for to create dataloader
-        self.utils = importlib.import_module(f'utils', package=f'data.frame_tools.{self.method.lower()}')
+        self.dataloader = importlib.import_module(f'dataloader', package=f'data.frame_tools.{self.method.lower()}')
         self.device = 'cuda:0'
 
     def setup(self, stage=None):
