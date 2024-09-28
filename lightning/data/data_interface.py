@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader
 from lightning.utils.utils import cuda
-
+from lightning.data.framediff.dataset import FrameDiff_Dataset
 
 class DInterface(pl.LightningDataModule):
     def __init__(self, conf):
@@ -17,7 +17,7 @@ class DInterface(pl.LightningDataModule):
         self.data_module = self.init_data_module(self.method)
 
         # import utils for to create dataloader
-        self.dataloader = importlib.import_module(f'dataloader', package=f'data.frame_tools.{self.method.lower()}')
+        self.dataloader = importlib.import_module(f'lightning.data.{self.method.lower()}.dataloader')
         self.device = 'cuda:0'
 
     def setup(self, stage=None):
@@ -78,4 +78,4 @@ class DInterface(pl.LightningDataModule):
         return module(**args1)
 
     def init_data_module(self, name, **other_args):
-        return getattr(importlib.import_module(f'.{name}_dataset', package='data'), f'{name}_Dataset')
+        return getattr(importlib.import_module('data.framediff.dataset'), f'{name}_Dataset')
