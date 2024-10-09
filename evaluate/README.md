@@ -6,7 +6,7 @@ Following "[*Out of Many, One: Designing and Scaffolding Proteins at the Scale o
 
 - First, a generated structure is fed into an **inverse folding model** ([ProteinMPNN](https://github.com/dauparas/ProteinMPNN)) to produce 8 plausible sequences for the design. 
 
-- Next, **structures of proposed sequences are predicted** (using [ESMFold](https://github.com/facebookresearch/esm)) and the consistency of predicted structures with respect to the original generated structure is assessed using a structure similarity metric (TM-score [50, 45])
+- Next, **structures of proposed sequences are predicted** (using [ESMFold](https://github.com/facebookresearch/esm)) and the consistency of predicted structures with respect to the original generated structure is assessed using a structure similarity metric ([TM-score](https://onlinelibrary.wiley.com/doi/10.1002/prot.20264))
 
 In this folder, this metric could be easily computed by running:
 
