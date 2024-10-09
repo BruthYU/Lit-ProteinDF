@@ -83,7 +83,7 @@ def process_line(line, max_len: int, write_dir: str):
         All other errors are unexpected and are propogated.
     """
     metadata = {}
-    line_name = line['name']
+    line_name = line['name'].split('.')[0].lower()
 
     metadata['pdb_name'] = line_name
 
@@ -183,7 +183,7 @@ def main(args):
     jsonl_path = args.jsonl_path
     with open(jsonl_path) as f:
         lines = f.readlines()
-    lines = lines[:10]
+    lines = lines[:30]
     total_num_paths = len(lines)
     write_dir = args.write_dir
     if not os.path.exists(write_dir):

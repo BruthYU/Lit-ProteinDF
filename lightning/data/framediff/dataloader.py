@@ -15,6 +15,8 @@ import io
 import gzip
 from torch.utils import data
 import torch
+import logging
+import random
 
 Protein = protein.Protein
 
@@ -173,5 +175,86 @@ def create_data_loader(
         multiprocessing_context='fork' if num_workers != 0 else None,
         )
 
+class TrainSampler(data.Sampler):
 
+    def __init__(
+            self,
+            *,
+            data_conf,
+            dataset,
+            batch_size,
+            sample_mode,
+        ):
+        self._log = logging.getLogger(__name__)
+        self._data_conf = data_conf
+        self._dataset = dataset
+        self._data_csv = self._dataset.csv
+        self._dataset_indices = list(range(len(self._data_csv)))
+        self._data_csv['index'] = self._dataset_indices
+        self._batch_size = batch_size
+        self.epoch = 0
+        self._sample_mode = sample_mode
+        self.sampler_len = len(self._dataset_indices) * self._batch_size
+
+        if self._sample_mode in ['cluster_length_batch', 'cluster_time_batch']:
+            self._pdb_to_cluster = self._read_clusters()
+            self._max_cluster = max(self._pdb_to_cluster.values())
+            self._log.info(f'Read {self._max_cluster} clusters.')
+            self._missing_pdbs = 0
+            def cluster_lookup(pdb):
+                pdb = pdb.upper()
+                if pdb not in self._pdb_to_cluster:
+                    self._pdb_to_cluster[pdb] = self._max_cluster + 1
+                    self._max_cluster += 1
+                    self._missing_pdbs += 1
+                return self._pdb_to_cluster[pdb]
+            self._data_csv['cluster'] = self._data_csv['pdb_name'].map(cluster_lookup)
+            num_clusters = len(set(self._data_csv['cluster']))
+            self.sampler_len = num_clusters * self._batch_size
+            self._log.info(
+                f'Training on {num_clusters} clusters. PDBs without clusters: {self._missing_pdbs}'
+            )
+
+    def _read_clusters(self):
+        pdb_to_cluster = {}
+        with open(self._data_conf.cluster_path, "r") as f:
+            for i,line in enumerate(f):
+                for chain in line.split(' '):
+                    pdb = chain.split('_')[0]
+                    pdb_to_cluster[pdb.upper()] = i
+        return pdb_to_cluster
+
+    def __iter__(self):
+        if self._sample_mode == 'length_batch':
+            # Each batch contains multiple proteins of the same length.
+            sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return iter(sampled_order['index'].tolist())
+        elif self._sample_mode == 'time_batch':
+            # Each batch contains multiple time steps of the same protein.
+            random.shuffle(self._dataset_indices)
+            repeated_indices = np.repeat(self._dataset_indices, self._batch_size)
+            return iter(repeated_indices)
+        elif self._sample_mode == 'cluster_length_batch':
+            # Each batch contains multiple clusters of the same length.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=self.epoch)
+            sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return iter(sampled_order['index'].tolist())
+        elif self._sample_mode == 'cluster_time_batch':
+            # Each batch contains multiple time steps of a protein from a cluster.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=self.epoch)
+            dataset_indices = sampled_clusters['index'].tolist()
+            repeated_indices = np.repeat(dataset_indices, self._batch_size)
+            return iter(repeated_indices.tolist())
+        else:
+            raise ValueError(f'Invalid sample mode: {self._sample_mode}')
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __len__(self):
+        return self.sampler_len
 
