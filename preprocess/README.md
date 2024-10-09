@@ -1,7 +1,7 @@
 ## Preprocess
 This folder is built to preprocess different types of protein files (`mmcif, pdb and jsonl`) into a unified cache format, which can be directly read for training.
 
-### Overview of File Directories
+### Directories Overview
 Raw data, intermediate data (metadata.csv and pickle files), unified lmdb-based cache files are organized in the following way.
 ```
 preprocess
