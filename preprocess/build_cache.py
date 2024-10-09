@@ -244,6 +244,9 @@ class BuildCache:
 
         os.makedirs(self.cache_path)
 
+        filtered_csv_path = os.path.join(self.cache_path, "filtered_protein.csv")
+        self.csv.to_csv(filtered_csv_path, index=False)
+
         # Initialize local cache with lmdb
         self._local_cache = lmdb.open(
             self.cache_path, map_size=(1024**3) * 60
