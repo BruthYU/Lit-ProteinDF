@@ -52,15 +52,15 @@ The intermediate files will be organized as follows:
 - While the **meatadata.csv** records basic properties of all proteins, which can be used to quickly filter the proteins with some customized conditions (such as the `minimum length` and the `maximum helix percent`). 
 
 
-### 3. Build Lmdb Cache
-Once you successfully produce the intermediate data the final step is to generate the lmdb cache file for training:
+### 3. Build the Lmdb Cache
+Once you successfully produce the intermediate data, the final step is to generate the lmdb cache file for training:
 
 ```
 python build_cache.py
 ```
 
 
-Specifically, the customized conditions can be modified on demand in `preprocess/conig.yaml`. The generated lmdb cache are organized as:
+Specifically, the customized conditions can be modified in `preprocess/conig.yaml`. The generated lmdb cache are organized as:
 ```
 .cache
 ├── pdb
@@ -69,7 +69,7 @@ Specifically, the customized conditions can be modified on demand in `preprocess
 │   └── lock.mdb
 ```
 
-**Notice** that a new `filtered_protein.csv` is generated according to the customized filtering contions.
+**Notice** that a new `filtered_protein.csv` is generated according to the customized filtering conditions.
 
 
 
