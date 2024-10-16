@@ -84,4 +84,4 @@ class DInterface(pl.LightningDataModule):
         return module(**args1)
 
     def init_data_module(self, name, **other_args):
-        return getattr(importlib.import_module('data.framediff.dataset'), f'{name}_Dataset')
+        return getattr(importlib.import_module(f'data.{name}.dataset'), f'{name}_Dataset')
