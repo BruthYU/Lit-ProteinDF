@@ -7,24 +7,19 @@ import os
 import torch.nn as nn
 from lightning.utils.utils import get_text_logger
 import ipdb
-
-
+from lightning.model.framediff import score_network
+from lightning.data.framediff import se3_diffuser
 class framediff_Lightning_Model(pl.LightningModule):
     def __init__(self, conf):
         super().__init__()
         self.save_hyperparameters()
+        self.model_conf = conf.model
+        self.frame_conf = conf.frame
+        self.diffuser = se3_diffuser.SE3Diffuser(self.frame_conf)
+        self.model = score_network.ScoreNetwork(self.model_conf, self.diffuser)
+        pass
 
-        self.train_loss = None
-        self.sampling_eps = 1e-3
 
-        self.graph = Absorbing(self.hparams.tokens) if self.hparams.graph_type == 'absorb' else Uniform(
-            self.hparams.tokens)
-        self.noise = LogLinearNoise() if self.hparams.noise == 'loglinear' else GeometricNoise()
-
-        # self.configure_loss()
-        os.makedirs(os.path.join(self.hparams.res_dir, self.hparams.ex_name), exist_ok=True)
-        self.text_logger = get_text_logger(self.hparams.res_dir,
-                                           self.hparams.ex_name)  # 你能使用text_logger在本地的.log文件中记录任何信息
 
     def add_noise(self, batch):
         t = (1 - self.sampling_eps) * torch.rand(batch.shape[0], device=batch.device) + self.sampling_eps

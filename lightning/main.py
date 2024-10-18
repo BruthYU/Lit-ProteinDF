@@ -118,7 +118,7 @@ def run(conf: DictConfig) -> None:
     gpu_count = torch.cuda.device_count()
 
     
-    model = MInterface(conf.dataset)
+    model = MInterface()
     
     trainer_config = {
         'devices': -1,  # Use all available GPUs
