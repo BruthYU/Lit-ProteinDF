@@ -26,8 +26,8 @@ import numpy as np
 from Bio import PDB
 from Bio.Data import SCOPData
 
-import openfold.np.residue_constants as residue_constants
-from openfold.data.errors import MultipleChainsError
+import evaluate.openfold.np.residue_constants as residue_constants
+from evaluate.openfold.data.errors import MultipleChainsError
 
 # Type aliases:
 ChainId = str

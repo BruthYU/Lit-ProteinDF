@@ -18,8 +18,8 @@ from typing import Tuple
 import torch
 import torch.nn as nn
 
-from openfold.model.primitives import LayerNorm, Linear
-from openfold.utils.tensor_utils import one_hot
+from evaluate.openfold.model.primitives import LayerNorm, Linear
+from evaluate.openfold.utils.tensor_utils import one_hot
 
 
 class InputEmbedder(nn.Module):

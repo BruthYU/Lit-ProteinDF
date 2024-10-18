@@ -17,8 +17,8 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
-from openfold.model.primitives import LayerNorm, Linear
-from openfold.utils.tensor_utils import chunk_layer
+from evaluate.openfold.model.primitives import LayerNorm, Linear
+from evaluate.openfold.utils.tensor_utils import chunk_layer
 
 
 class PairTransition(nn.Module):

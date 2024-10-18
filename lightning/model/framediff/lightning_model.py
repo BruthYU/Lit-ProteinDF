@@ -9,15 +9,21 @@ from lightning.utils.utils import get_text_logger
 import ipdb
 from lightning.model.framediff import score_network
 from lightning.data.framediff import se3_diffuser
+import logging
+
 class framediff_Lightning_Model(pl.LightningModule):
     def __init__(self, conf):
         super().__init__()
         self.save_hyperparameters()
+        self.log = logging.getLogger(__name__)
         self.model_conf = conf.model
         self.frame_conf = conf.frame
+        self.exp_conf = conf.experiment
         self.diffuser = se3_diffuser.SE3Diffuser(self.frame_conf)
         self.model = score_network.ScoreNetwork(self.model_conf, self.diffuser)
-        pass
+
+
+
 
 
 

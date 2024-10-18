@@ -1,6 +1,6 @@
 # @package _global_
 dataset:
-  name: FrameDiff
+  name: framediff
   cache_dir: /home/yu/HENU/westlake/Lit-ProteinDF/preprocess/.cache/jsonl
   cluster_path: ./data/framediff/clusters-by-entity-30.txt
   min_t: 0.01
@@ -68,7 +68,7 @@ experiment:
   # Training arguments
   log_freq: 1000
   batch_size: 3
-  eval_batch_size: ${data.samples_per_eval_length}
+  eval_batch_size: ${dataset.samples_per_eval_length}
   num_loader_workers: 5
   num_epoch: 500_000
   learning_rate: 0.0001

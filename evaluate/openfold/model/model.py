@@ -18,27 +18,27 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-import openfold.np.residue_constants as residue_constants
-from openfold.model.embedders import (
+import evaluate.openfold.np.residue_constants as residue_constants
+from evaluate.openfold.model.embedders import (
     ExtraMSAEmbedder,
     InputEmbedder,
     RecyclingEmbedder,
     TemplateAngleEmbedder,
     TemplatePairEmbedder,
 )
-from openfold.model.evoformer import EvoformerStack, ExtraMSAStack
-from openfold.model.heads import AuxiliaryHeads
-from openfold.model.structure_module import StructureModule
-from openfold.model.template import TemplatePairStack, TemplatePointwiseAttention
-from openfold.utils.feats import (
+from evaluate.openfold.model.evoformer import EvoformerStack, ExtraMSAStack
+from evaluate.openfold.model.heads import AuxiliaryHeads
+from evaluate.openfold.model.structure_module import StructureModule
+from evaluate.openfold.model.template import TemplatePairStack, TemplatePointwiseAttention
+from evaluate.openfold.utils.feats import (
     atom14_to_atom37,
     build_extra_msa_feat,
     build_template_angle_feat,
     build_template_pair_feat,
     pseudo_beta_fn,
 )
-from openfold.utils.loss import compute_plddt
-from openfold.utils.tensor_utils import dict_multimap, tensor_tree_map
+from evaluate.openfold.utils.loss import compute_plddt
+from evaluate.openfold.utils.tensor_utils import dict_multimap, tensor_tree_map
 
 
 class AlphaFold(nn.Module):

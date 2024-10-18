@@ -20,8 +20,8 @@ from typing import List, Optional
 import torch
 import torch.nn as nn
 
-from openfold.model.primitives import Attention, LayerNorm, Linear
-from openfold.utils.tensor_utils import (
+from evaluate.openfold.model.primitives import Attention, LayerNorm, Linear
+from evaluate.openfold.utils.tensor_utils import (
     chunk_layer,
     flatten_final_dims,
     permute_final_dims,

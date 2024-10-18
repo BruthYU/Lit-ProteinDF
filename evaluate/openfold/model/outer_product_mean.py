@@ -19,8 +19,8 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
-from openfold.model.primitives import Linear
-from openfold.utils.tensor_utils import chunk_layer
+from evaluate.openfold.model.primitives import Linear
+from evaluate.openfold.utils.tensor_utils import chunk_layer
 
 
 class OuterProductMean(nn.Module):

@@ -27,9 +27,9 @@ from openmm import app as openmm_app
 from openmm import unit
 from openmm.app.internal.pdbstructure import PdbStructure
 
-import openfold.utils.loss as loss
-from openfold.np import protein, residue_constants
-from openfold.np.relax import cleanup, utils
+import evaluate.openfold.utils.loss as loss
+from evaluate.openfold.np import protein, residue_constants
+from evaluate.openfold.np.relax import cleanup, utils
 
 ENERGY = unit.kilocalories_per_mole
 LENGTH = unit.angstroms

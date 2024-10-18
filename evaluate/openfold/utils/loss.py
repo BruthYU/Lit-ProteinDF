@@ -23,10 +23,10 @@ import torch
 import torch.nn as nn
 from torch.distributions.bernoulli import Bernoulli
 
-from openfold.np import residue_constants
-from openfold.utils import feats
-from openfold.utils.rigid_utils import Rigid, Rotation
-from openfold.utils.tensor_utils import (
+from evaluate.openfold.np import residue_constants
+from evaluate.openfold.utils import feats
+from evaluate.openfold.utils.rigid_utils import Rigid, Rotation
+from evaluate.openfold.utils.tensor_utils import (
     batched_gather,
     masked_mean,
     permute_final_dims,

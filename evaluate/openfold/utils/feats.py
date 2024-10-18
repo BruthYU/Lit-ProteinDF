@@ -20,10 +20,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import openfold.np.residue_constants as rc
-from openfold.np import protein
-from openfold.utils.rigid_utils import Rigid, Rotation
-from openfold.utils.tensor_utils import (
+import evaluate.openfold.np.residue_constants as rc
+from evaluate.openfold.np import protein
+from evaluate.openfold.utils.rigid_utils import Rigid, Rotation
+from evaluate.openfold.utils.tensor_utils import (
     batched_gather,
     one_hot,
     tensor_tree_map,

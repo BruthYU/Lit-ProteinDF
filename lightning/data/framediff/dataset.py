@@ -14,7 +14,7 @@ import logging
 
 
 
-class FrameDiff_Dataset(data.Dataset):
+class framediff_Dataset(data.Dataset):
     def __init__(self,
                  data_conf = None,
                  frame_conf = None,
@@ -113,4 +113,4 @@ class FrameDiff_Dataset(data.Dataset):
 
 if __name__ == '__main__':
 
-    instance = FrameDiff_Dataset()
+    instance = framediff_Dataset()

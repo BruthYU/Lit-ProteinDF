@@ -23,7 +23,7 @@ from concurrent import futures
 from typing import Any, Callable, Mapping, Optional, Sequence
 from urllib import request
 
-from openfold.data.tools import utils
+from evaluate.openfold.data.tools import utils
 
 
 class Jackhmmer:

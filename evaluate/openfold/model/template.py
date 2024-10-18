@@ -19,19 +19,19 @@ from typing import List, Optional
 import torch
 import torch.nn as nn
 
-from openfold.model.dropout import DropoutColumnwise, DropoutRowwise
-from openfold.model.pair_transition import PairTransition
-from openfold.model.primitives import Attention, LayerNorm, Linear
-from openfold.model.triangular_attention import (
+from evaluate.openfold.model.dropout import DropoutColumnwise, DropoutRowwise
+from evaluate.openfold.model.pair_transition import PairTransition
+from evaluate.openfold.model.primitives import Attention, LayerNorm, Linear
+from evaluate.openfold.model.triangular_attention import (
     TriangleAttentionEndingNode,
     TriangleAttentionStartingNode,
 )
-from openfold.model.triangular_multiplicative_update import (
+from evaluate.openfold.model.triangular_multiplicative_update import (
     TriangleMultiplicationIncoming,
     TriangleMultiplicationOutgoing,
 )
-from openfold.utils.checkpointing import checkpoint_blocks
-from openfold.utils.tensor_utils import (
+from evaluate.openfold.utils.checkpointing import checkpoint_blocks
+from evaluate.openfold.utils.tensor_utils import (
     chunk_layer,
     flatten_final_dims,
     permute_final_dims,

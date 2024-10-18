@@ -23,8 +23,8 @@ import torch
 import torch.nn as nn
 from scipy.stats import truncnorm
 
-from openfold.utils.checkpointing import get_checkpoint_fn
-from openfold.utils.tensor_utils import (
+from evaluate.openfold.utils.checkpointing import get_checkpoint_fn
+from evaluate.openfold.utils.tensor_utils import (
     _chunk_slice,
     flatten_final_dims,
     permute_final_dims,

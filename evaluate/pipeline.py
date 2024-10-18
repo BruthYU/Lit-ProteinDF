@@ -39,7 +39,7 @@ class Pipeline:
 		##################
 
 		assert os.path.exists(input_dir), 'Missing input directory'
-		pdbs_dir = os.path.join(input_dir, 'pdbs')
+		pdbs_dir = input_dir
 		assert os.path.exists(pdbs_dir), 'Missing pdbs directory'
 		assert not os.path.exists(output_dir), 'Output directory existed'
 		os.mkdir(output_dir)

@@ -118,13 +118,14 @@ def run(conf: DictConfig) -> None:
     gpu_count = torch.cuda.device_count()
 
     
-    model = MInterface()
+    model = MInterface(conf)
     
     trainer_config = {
         'devices': -1,  # Use all available GPUs
         # 'precision': 'bf16',  # Use 32-bit floating point precision
         'precision': '32',
         'max_epochs': args.epoch,  # Maximum number of epochs to train for
+        'reload_dataloaders_every_n_epochs': 1,
         'num_nodes': 1,  # Number of nodes to use for distributed training
         "strategy": 'ddp',
         "accumulate_grad_batches": 1,

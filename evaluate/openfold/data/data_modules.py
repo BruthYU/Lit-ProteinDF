@@ -12,8 +12,8 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import RandomSampler
 
-from openfold.data import data_pipeline, feature_pipeline, mmcif_parsing, templates
-from openfold.utils.tensor_utils import dict_multimap, tensor_tree_map
+from evaluate.openfold.data import data_pipeline, feature_pipeline, mmcif_parsing, templates
+from evaluate.openfold.utils.tensor_utils import dict_multimap, tensor_tree_map
 
 
 class OpenFoldSingleDataset(torch.utils.data.Dataset):

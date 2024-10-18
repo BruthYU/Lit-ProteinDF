@@ -1,9 +1,11 @@
 import inspect
 import importlib
 import pytorch_lightning as pl
+import random
 import torch
 from torch.utils.data import DataLoader
-
+import logging
+LOG = logging.getLogger(__name__)
 
 class DInterface(pl.LightningDataModule):
     def __init__(self, conf):
@@ -15,60 +17,58 @@ class DInterface(pl.LightningDataModule):
         self.method = self.data_conf.name
         self.data_module = self.init_data_module(self.method)
         # import utils for to create dataloader
-        self.dataloader = importlib.import_module(f'lightning.data.{self.method.lower()}.dataloader')
+        self.dataloader = importlib.import_module(f'lightning.data.{self.method}.dataloader')
         self.device = 'cuda:0'
 
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
         if stage == 'fit' or stage is None:
-            '''Train Dataloader'''
+            '''Train Dataset & Sampler'''
             self.trainset = self.instancialize_module(module = self.data_module,is_training=True,
                                                       frame_conf=self.frame_conf, data_conf=self.data_conf)
 
-            # Create Sampler on pre-defined mode
-            train_sampler = self.dataloader.TrainSampler(
+            self.train_sampler = self.dataloader.TrainSampler(
                 data_conf=self.data_conf,
                 dataset=self.trainset,
                 batch_size=self.exp_conf.batch_size,
                 sample_mode=self.exp_conf.sample_mode,
             )
 
-            # Create Dataloader
-            num_workers = self.exp_conf.num_loader_workers
-            train_loader = self.dataloader.create_data_loader(
-                self.trainset,
-                sampler=train_sampler,
-                np_collate=False,
-                length_batch=True,
-                batch_size=self.exp_conf.batch_size if not self.exp_conf.use_ddp else self.exp_conf.batch_size // self.ddp_info['world_size'],
-                shuffle=False,
-                num_workers=num_workers,
-                drop_last=False,
-                max_squared_res=self.exp_conf.max_squared_res,
-            )
 
-            '''Valid Dataloader'''
+            '''Valid Dataset & Sampler'''
             self.valset = self.instancialize_module(module=self.data_module, is_training=False,
                                                       frame_conf=self.frame_conf, data_conf=self.data_conf)
-            valid_sampler = None
-            valid_loader = self.dataloader.create_data_loader(
-                self.valset,
-                sampler=valid_sampler,
-                np_collate=False,
-                length_batch=False,
-                batch_size=self.exp_conf.eval_batch_size,
-                shuffle=False,
-                num_workers=1,
-                drop_last=False,
-            )
+            self.valid_sampler = None
 
 
+    def train_dataloader(self):
+        # Create Sampler on pre-defined mode
+        num_workers = self.exp_conf.num_loader_workers
+        train_loader = self.dataloader.create_data_loader(
+            self.trainset,
+            sampler=self.train_sampler,
+            np_collate=False,
+            length_batch=True,
+            batch_size=self.exp_conf.batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            drop_last=False,
+            max_squared_res=self.exp_conf.max_squared_res,
+        )
+        return train_loader
 
-
-
-        # Assign test dataset for use in dataloader(s)
-        if stage == 'test' or stage is None:
-            self.testset = self.instancialize_module(module = self.data_module, split='test')
+    def val_dataloader(self):
+        valid_loader = self.dataloader.create_data_loader(
+            self.valset,
+            sampler=self.valid_sampler,
+            np_collate=False,
+            length_batch=False,
+            batch_size=self.exp_conf.eval_batch_size,
+            shuffle=False,
+            num_workers=1,
+            drop_last=False,
+        )
+        return valid_loader
 
 
 
