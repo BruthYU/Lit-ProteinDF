@@ -24,17 +24,9 @@ class framediff_Lightning_Model(pl.LightningModule):
         self.diffuser = se3_diffuser.SE3Diffuser(self.frame_conf)
         self.model = score_network.ScoreNetwork(self.model_conf, self.diffuser)
 
-    # def forward(self, batch, cond):
-    #     perturbed_batch, sigma, dsigma = self.add_noise(batch)
-    #     log_score = self.model(perturbed_batch, cond, sigma)
-    #     loss = self.graph.score_entropy(log_score, sigma[:, None], perturbed_batch, batch)
-    #     try:
-    #         assert torch.isfinite(loss).all()
-    #     except:
-    #         ipdb.set_trace()
-    #     loss = (dsigma[:, None] * loss).sum(dim=-1).mean()
-    #
-    #     return loss
+    def forward(self, batch, cond):
+        model_out = self.model(batch)
+        return model_out
 
     def training_step(self, batch, batch_idx, **kwargs):
         loss, aux_data = self.loss_fn(batch)

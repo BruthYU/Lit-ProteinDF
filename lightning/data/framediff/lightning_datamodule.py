@@ -38,6 +38,15 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
                 sample_mode=self.exp_conf.sample_mode,
             )
 
+            '''
+            Distributed Sampler
+            self.train_sampler = self.dataloader.DistributedTrainSampler(
+                data_conf=self.data_conf,
+                dataset=self.trainset,
+                batch_size=self.exp_conf.batch_size,
+            )
+            '''
+
             '''Valid Dataset & Sampler'''
             self.valset = self.instancialize_module(module=self.data_module, is_training=False,
                                                     frame_conf=self.frame_conf, data_conf=self.data_conf)

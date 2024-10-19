@@ -58,7 +58,7 @@ def run(conf: DictConfig) -> None:
     pl.seed_everything(conf.experiment.seed)
 
     data_interface = DInterface(conf)
-    data_interface.lightning_datamodule.setup()
+    data_interface.datamodule.setup()
     model_interface = MInterface(conf)
 
     gpu_count = torch.cuda.device_count()
