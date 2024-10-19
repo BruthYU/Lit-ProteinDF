@@ -30,75 +30,55 @@ class SamplerCallback(Callback):
         trainer.datamodule.train_sampler.add_epoch()
 
 
-
 def load_callbacks(conf):
-    callbacks = []
-
+    callback_list = []
     # Checkpoint Callback
-    callbacks.append(plc.ModelCheckpoint(
+    callback_list.append(plc.ModelCheckpoint(
         monitor='val_loss',
         filename='best-{epoch:02d}-{val_loss:.3f}',
-        save_top_k=5,
+        save_top_k=2,
         mode='min',
         save_last=True,
         every_n_epochs=conf.experiment.ckpt_freq
     ))
-
     # Learning Rate Callback
     if conf.experiment.lr_scheduler:
-        callbacks.append(plc.LearningRateMonitor(
+        callback_list.append(plc.LearningRateMonitor(
             logging_interval=None))
-
     # Epoch as the sampler random state
     if conf.dataset.name in ['framediff', 'foldflow']:
-        callbacks.append(SamplerCallback())
-
-    return callbacks
+        callback_list.append(SamplerCallback())
+    return callback_list
 
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def run(conf: DictConfig) -> None:
 
-
     pl.seed_everything(conf.experiment.seed)
-    
-    data_module = DInterface(conf)
-    data_module.setup()
+
+    data_interface = DInterface(conf)
+    data_interface.lightning_datamodule.setup()
+    model_interface = MInterface(conf)
+
     gpu_count = torch.cuda.device_count()
-    conf.experiment.steps_per_epoch = math.ceil(len(data_module.trainset) / conf.experiment.batch_size / gpu_count)
+    conf.experiment.steps_per_epoch = math.ceil(len(data_interface.lightning_datamodule.trainset)
+                                                / conf.experiment.batch_size / gpu_count)
     LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, batch_size {conf.experiment.batch_size}")
 
-    
-    model = MInterface(conf)
-    
     trainer_config = {
         'devices': -1,  # Use all available GPUs
         # 'precision': 'bf16',  # Use 32-bit floating point precision
         'precision': '32',
-        'max_epochs': args.epoch,  # Maximum number of epochs to train for
-        'reload_dataloaders_every_n_epochs': 1,
+        'max_epochs': conf.experiment.num_epoch,  # Maximum number of epochs to train for
         'num_nodes': 1,  # Number of nodes to use for distributed training
         "strategy": 'ddp',
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
-        'callbacks': load_callbacks(args),
-        'logger': [
-                    plog.WandbLogger(
-                    project = 'TokenDiff',
-                    name=args.ex_name,
-                    save_dir=str(os.path.join(args.res_dir, args.ex_name)),
-                    offline = args.offline,
-                    id = args.ex_name.replace('/', '-',5),
-                    entity = "gmondy",
-                    ),
-                   plog.CSVLogger(args.res_dir, name=args.ex_name)],
-         'gradient_clip_val': 0.5
+        'callbacks': load_callbacks(conf),
     }
 
     trainer = Trainer(**trainer_config)
-    
-    trainer.fit(model, data_module)
-    
+    trainer.fit(model_interface.model, data_interface.datamodule)
     print(trainer_config)
 
 
