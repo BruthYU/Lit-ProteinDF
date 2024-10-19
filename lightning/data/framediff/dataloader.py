@@ -254,8 +254,8 @@ class TrainSampler(data.Sampler):
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
 
-    def set_epoch(self, epoch):
-        self.epoch = epoch
+    def add_epoch(self):
+        self.epoch = self.epoch + 1
 
 
     def __len__(self):
@@ -390,7 +390,7 @@ class DistributedTrainSampler(data.Sampler):
     def __len__(self) -> int:
         return self.num_samples
 
-    def set_epoch(self, epoch: int) -> None:
+    def add_epoch(self) -> None:
         r"""
         Sets the epoch for this sampler. When :attr:`shuffle=True`, this ensures all replicas
         use a different random ordering for each epoch. Otherwise, the next iteration of this
@@ -399,4 +399,4 @@ class DistributedTrainSampler(data.Sampler):
         Args:
             epoch (int): Epoch number.
         """
-        self.epoch = epoch
+        self.epoch = self.epoch + 1

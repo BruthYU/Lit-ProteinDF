@@ -15,107 +15,58 @@ from omegaconf import OmegaConf
 from pytorch_lightning.trainer import Trainer
 import pytorch_lightning.callbacks as plc
 import pytorch_lightning.loggers as plog
+from pytorch_lightning.callbacks import Callback
 from model import MInterface
 from data import DInterface
-# from utils.utils import load_model_path_by_args # 返回最优chckpoint的路径
-from utils.logger import SetupCallback, BackupCodeCallback
+import logging
 
-def create_parser():
-    parser = argparse.ArgumentParser()
-    # Set-up parameters
-    parser.add_argument('--res_dir', default='./results', type=str)
-    parser.add_argument('--ex_name', default='debug1', type=str)
-    parser.add_argument('--dataset', default='PDB', type=str)
-    parser.add_argument('--model_name', default='SEDD', type=str)
-    
-    # dataset parameters
-    parser.add_argument('--batch_size', default=32, type=int)
-    parser.add_argument('--num_workers', default=1, type=int)
-    
-    # model parameters
-    parser.add_argument('--graph_type', default='absorb', type=str) # absorb uniform
-    parser.add_argument('--noise', default='loglinear', type=str) # loglinear geometric
-    parser.add_argument('--tokens', default=258, type=int)
-    parser.add_argument('--block_size', default=512, type=int)
+LOG = logging.getLogger(__name__)
 
-    parser.add_argument('--hidden_size', default=768, type=int)
-    parser.add_argument('--cond_dim', default=128, type=int)
-    parser.add_argument('--n_heads', default=12, type=int)
-    parser.add_argument('--dropout', default=0.1, type=float)
-    parser.add_argument('--n_blocks', default=12, type=int)
-    parser.add_argument('--scale_by_sigma', default=True, type=bool)
+class SamplerCallback(Callback):
+    def __init__(self):
+        super().__init__()
 
-    # Training parameters
-    parser.add_argument('--epoch', default=100, type=int, help='end epoch')
-    parser.add_argument('--check_val_every_n_epoch', default=1, type=int)
-    parser.add_argument('--patience', default=10, type=int)
-    parser.add_argument('--lr_scheduler', default='cosine')
-    parser.add_argument('--lr_decay_steps', default=4000, type=int)
-    parser.add_argument('--lr_decay_min_lr', default=0.8, type=float)
-    # parser.add_argument('--warmup_steps', default=2500, type=int)
-    parser.add_argument('--weight_decay', default=0, type=float)
-    parser.add_argument('--lr', default=3e-4, type=float, help='Learning rate')
-    parser.add_argument('--offline', default=0, type=int) # 如果offline=1,不会上传到wandb; 否则结果会同步到wandb
-    parser.add_argument('--seed', default=111, type=int)
-    
-    args = parser.parse_args()
-    return args
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        trainer.datamodule.train_sampler.add_epoch()
 
 
 
-def load_callbacks(args):
+def load_callbacks(conf):
     callbacks = []
-    
-    logdir = str(os.path.join(args.res_dir, args.ex_name))
-    
-    ckptdir = os.path.join(logdir, "checkpoints")
-    
-    callbacks.append(BackupCodeCallback('./',logdir))
-    
 
-    metric = "val_loss"
-    sv_filename = 'best-{epoch:02d}-{val_loss:.3f}'
+    # Checkpoint Callback
     callbacks.append(plc.ModelCheckpoint(
-        monitor=metric,
-        filename=sv_filename,
-        save_top_k=15,
+        monitor='val_loss',
+        filename='best-{epoch:02d}-{val_loss:.3f}',
+        save_top_k=5,
         mode='min',
         save_last=True,
-        dirpath = ckptdir,
-        verbose = True,
-        every_n_epochs = args.check_val_every_n_epoch,
+        every_n_epochs=conf.experiment.ckpt_freq
     ))
 
-    
-    now = datetime.datetime.now().strftime("%m-%dT%H-%M-%S")
-    cfgdir = os.path.join(logdir, "config")
-    callbacks.append(
-        SetupCallback(
-                now = now,
-                logdir = logdir,
-                ckptdir = ckptdir,
-                cfgdir = cfgdir,
-                config = args.__dict__,
-                argv_content = sys.argv + ["gpus: {}".format(torch.cuda.device_count())],)
-    )
-    
-    
-    if args.lr_scheduler:
+    # Learning Rate Callback
+    if conf.experiment.lr_scheduler:
         callbacks.append(plc.LearningRateMonitor(
             logging_interval=None))
-    return callbacks
 
+    # Epoch as the sampler random state
+    if conf.dataset.name in ['framediff', 'foldflow']:
+        callbacks.append(SamplerCallback())
+
+    return callbacks
 
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def run(conf: DictConfig) -> None:
 
+
     pl.seed_everything(conf.experiment.seed)
     
     data_module = DInterface(conf)
     data_module.setup()
-    
     gpu_count = torch.cuda.device_count()
+    conf.experiment.steps_per_epoch = math.ceil(len(data_module.trainset) / conf.experiment.batch_size / gpu_count)
+    LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, batch_size {conf.experiment.batch_size}")
 
     
     model = MInterface(conf)

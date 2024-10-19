@@ -1,6 +1,6 @@
 import importlib
 import logging
-LOG = logging.getLogger(__name__)
+
 
 class MInterface():
     def __init__(self, conf):

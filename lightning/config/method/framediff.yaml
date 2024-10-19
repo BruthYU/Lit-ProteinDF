@@ -68,15 +68,26 @@ experiment:
   # Training arguments
   log_freq: 1000
   batch_size: 3
+  steps_per_epoch: null
   eval_batch_size: ${dataset.samples_per_eval_length}
   num_loader_workers: 5
   num_epoch: 500_000
-  learning_rate: 0.0001
+  weight_decay: 0
   max_squared_res: 500000
   prefetch_factor: 100
   use_gpu: True
-  num_gpus: 1
+  # num_gpus: 1
   sample_mode: cluster_time_batch
+
+
+  # Optimizer and Scheduler
+  learning_rate: 0.0001
+  lr_scheduler: step
+  lr_decay_steps: 10_0000
+  lr_decay_min_lr: 0.00008
+
+
+
 
   # Wandb logging
   wandb_dir: ./
