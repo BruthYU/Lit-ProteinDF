@@ -22,12 +22,14 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
-class SamplerCallback(Callback):
-    def __init__(self):
+class MethodCallback(Callback):
+    def __init__(self, method_name):
         super().__init__()
+        self.method_name = method_name
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        trainer.datamodule.train_sampler.add_epoch()
+        if self.method_name in ['framediff', 'foldflow']:
+            trainer.datamodule.train_sampler.add_epoch()
 
 
 def load_callbacks(conf):
@@ -45,9 +47,8 @@ def load_callbacks(conf):
     if conf.experiment.lr_scheduler:
         callback_list.append(plc.LearningRateMonitor(
             logging_interval=None))
-    # Epoch as the sampler random state
-    if conf.dataset.name in ['framediff', 'foldflow']:
-        callback_list.append(SamplerCallback())
+    # Epoch callback
+    callback_list.append(MethodCallback(conf.dataset.name))
     return callback_list
 
 
