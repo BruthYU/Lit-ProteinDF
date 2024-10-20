@@ -59,7 +59,7 @@ def get_csv_row(csv, idx):
     gt_bb_rigid = rigid_utils.Rigid.from_tensor_4x4(chain_feats["rigidgroups_0"])[:, 0]
     flowed_mask = np.ones_like(chain_feats["res_mask"])
     if np.sum(flowed_mask) < 1:
-        raise ValueError("Must be flowed")
+        raise ValueError("At least one res could be diffused")
     fixed_mask = 1 - flowed_mask
     chain_feats["fixed_mask"] = fixed_mask
     chain_feats["rigids_0"] = gt_bb_rigid.to_tensor_7()

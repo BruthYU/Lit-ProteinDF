@@ -125,18 +125,18 @@ class framediff_Lightning_Model(pl.LightningModule):
         ) / (loss_mask.sum(dim=-1) + 1e-10)
 
         '''Translation x0 loss'''
-        gt_trans_x0 = batch['rigids_0'][..., 4:] * self._exp_conf.coordinate_scaling
-        pred_trans_x0 = model_out['rigids'][..., 4:] * self._exp_conf.coordinate_scaling
+        gt_trans_x0 = batch['rigids_0'][..., 4:] * self.exp_conf.coordinate_scaling
+        pred_trans_x0 = model_out['rigids'][..., 4:] * self.exp_conf.coordinate_scaling
         trans_x0_loss = torch.sum(
             (gt_trans_x0 - pred_trans_x0)**2 * loss_mask[..., None],
             dim=(-1, -2)
         ) / (loss_mask.sum(dim=-1) + 1e-10)
 
         trans_loss = (
-            trans_score_loss * (batch['t'] > self._exp_conf.trans_x0_threshold)
-            + trans_x0_loss * (batch['t'] <= self._exp_conf.trans_x0_threshold)
+            trans_score_loss * (batch['t'] > self.exp_conf.trans_x0_threshold)
+            + trans_x0_loss * (batch['t'] <= self.exp_conf.trans_x0_threshold)
         )
-        trans_loss *= self._exp_conf.trans_loss_weight
+        trans_loss *= self.exp_conf.trans_loss_weight
         trans_loss *= int(self._diff_conf.diffuse_trans)
 
         '''Rotation loss'''
@@ -159,8 +159,8 @@ class framediff_Lightning_Model(pl.LightningModule):
                 angle_loss / rot_score_scaling[:, None, None]**2,
                 dim=(-1, -2)
             ) / (loss_mask.sum(dim=-1) + 1e-10)
-            angle_loss *= self._exp_conf.rot_loss_weight
-            angle_loss *= batch['t'] > self._exp_conf.rot_loss_t_threshold
+            angle_loss *= self.exp_conf.rot_loss_weight
+            angle_loss *= batch['t'] > self.exp_conf.rot_loss_t_threshold
             rot_loss = angle_loss + axis_loss
         else:
             rot_mse = (gt_rot_score - pred_rot_score)**2 * loss_mask[..., None]
@@ -168,8 +168,8 @@ class framediff_Lightning_Model(pl.LightningModule):
                 rot_mse / rot_score_scaling[:, None, None]**2,
                 dim=(-1, -2)
             ) / (loss_mask.sum(dim=-1) + 1e-10)
-            rot_loss *= self._exp_conf.rot_loss_weight
-            rot_loss *= batch['t'] > self._exp_conf.rot_loss_t_threshold
+            rot_loss *= self.exp_conf.rot_loss_weight
+            rot_loss *= batch['t'] > self.exp_conf.rot_loss_t_threshold
         rot_loss *= int(self._diff_conf.diffuse_rot)
 
         '''Backbone atom loss'''
@@ -188,9 +188,9 @@ class framediff_Lightning_Model(pl.LightningModule):
             (pred_atom37 - gt_atom37)**2 * bb_atom_loss_mask[..., None],
             dim=(-1, -2, -3)
         ) / (bb_atom_loss_mask.sum(dim=(-1, -2)) + 1e-10)
-        bb_atom_loss *= self._exp_conf.bb_atom_loss_weight
-        bb_atom_loss *= batch['t'] < self._exp_conf.bb_atom_loss_t_filter
-        bb_atom_loss *= self._exp_conf.aux_loss_weight
+        bb_atom_loss *= self.exp_conf.bb_atom_loss_weight
+        bb_atom_loss *= batch['t'] < self.exp_conf.bb_atom_loss_t_filter
+        bb_atom_loss *= self.exp_conf.aux_loss_weight
 
         '''Pairwise distance loss'''
         gt_flat_atoms = gt_atom37.reshape([batch_size, num_res*5, 3])
@@ -217,9 +217,9 @@ class framediff_Lightning_Model(pl.LightningModule):
             (gt_pair_dists - pred_pair_dists)**2 * pair_dist_mask,
             dim=(1, 2))
         dist_mat_loss /= (torch.sum(pair_dist_mask, dim=(1, 2)) - num_res)
-        dist_mat_loss *= self._exp_conf.dist_mat_loss_weight
-        dist_mat_loss *= batch['t'] < self._exp_conf.dist_mat_loss_t_filter
-        dist_mat_loss *= self._exp_conf.aux_loss_weight
+        dist_mat_loss *= self.exp_conf.dist_mat_loss_weight
+        dist_mat_loss *= batch['t'] < self.exp_conf.dist_mat_loss_t_filter
+        dist_mat_loss *= self.exp_conf.aux_loss_weight
 
         '''Final loss'''
         final_loss = (
