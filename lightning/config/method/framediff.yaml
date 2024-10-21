@@ -4,7 +4,7 @@ dataset:
   cache_dir: /home/yu/HENU/westlake/Lit-ProteinDF/preprocess/.cache/jsonl
   cluster_path: ${hydra:runtime.cwd}/data/framediff/clusters-by-entity-30.txt
   min_t: 0.01
-  samples_per_eval_length: 4
+  samples_per_eval_length: 1
   num_eval_lengths: 10
   num_t: 100
 
@@ -53,7 +53,7 @@ model:
     seq_tfmr_num_heads: 4
     seq_tfmr_num_layers: 2
     num_blocks: 4
-    coordinate_scaling: ${diffuser.r3.coordinate_scaling}
+    coordinate_scaling: ${frame.r3.coordinate_scaling}
 
 
 experiment:
@@ -77,7 +77,7 @@ experiment:
   prefetch_factor: 100
   use_gpu: True
   # num_gpus: 1
-  sample_mode: cluster_time_batch
+  sample_mode: time_batch
 
 
   # Optimizer and Scheduler
@@ -85,6 +85,7 @@ experiment:
   lr_scheduler: step
   lr_decay_steps: 10_0000
   lr_decay_min_lr: 0.00008
+  lr_decay_rate: 0.95
 
 
 
@@ -109,7 +110,7 @@ experiment:
   rot_loss_t_threshold: 0.2
   separate_rot_loss: True
   trans_x0_threshold: 1.0
-  coordinate_scaling: ${diffuser.r3.coordinate_scaling}
+  coordinate_scaling: ${frame.r3.coordinate_scaling}
   bb_atom_loss_weight: 1.0
   bb_atom_loss_t_filter: 0.25
   dist_mat_loss_weight: 1.0

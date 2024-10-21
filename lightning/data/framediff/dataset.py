@@ -18,7 +18,7 @@ class framediff_Dataset(data.Dataset):
     def __init__(self,
                  data_conf = None,
                  frame_conf = None,
-                 is_training=True):
+                 is_training= True):
         super().__init__()
         self.data_conf = data_conf
         self.is_training = is_training
@@ -51,11 +51,10 @@ class framediff_Dataset(data.Dataset):
             )
         else:
             t = 1.0
-            diff_feats_t = self.diffuser.sample_ref(
-                n_samples=gt_bb_rigid.shape[0],
-                impute=gt_bb_rigid,
-                diffuse_mask=None,
-                as_tensor_7=True,
+            diff_feats_t = self.diffuser.forward_marginal(
+                rigids_0=gt_bb_rigid,
+                t=t,
+                diffuse_mask=None
             )
         chain_feats.update(diff_feats_t)
         chain_feats['t'] = t
@@ -64,10 +63,7 @@ class framediff_Dataset(data.Dataset):
         final_feats = tree.map_structure(
             lambda x: x if torch.is_tensor(x) else torch.tensor(x), chain_feats)
         final_feats = du.pad_feats(final_feats, csv_row['modeled_seq_len'])
-        if self.is_training:
-            return final_feats
-        else:
-            return final_feats, pdb_name
+        return final_feats
 
     def cache_to_memory(self):
         print(f"Loading cache from local dataset @ {self.cache_dir}")
@@ -88,6 +84,7 @@ class framediff_Dataset(data.Dataset):
             result_tuples = result_tuples[:-6]
             self.csv = self.csv[:-6]
         else:
+            # TODO create_split(): samples_per_eval_length
             result_tuples = result_tuples[-6:]
             self.csv = self.csv[-6:]
 

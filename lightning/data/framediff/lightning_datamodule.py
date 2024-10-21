@@ -31,33 +31,33 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
             self.trainset = self.instancialize_module(module=self.data_module, is_training=True,
                                                       frame_conf=self.frame_conf, data_conf=self.data_conf)
 
-            self.train_sampler = self.dataloader.TrainSampler(
-                data_conf=self.data_conf,
-                dataset=self.trainset,
-                batch_size=self.exp_conf.batch_size,
-                sample_mode=self.exp_conf.sample_mode,
-            )
-
-            '''
-            Distributed Sampler
-            self.train_sampler = self.dataloader.DistributedTrainSampler(
-                data_conf=self.data_conf,
-                dataset=self.trainset,
-                batch_size=self.exp_conf.batch_size,
-            )
-            '''
-
             '''Valid Dataset & Sampler'''
             self.valset = self.instancialize_module(module=self.data_module, is_training=False,
                                                     frame_conf=self.frame_conf, data_conf=self.data_conf)
-            self.valid_sampler = None
+
 
     def train_dataloader(self):
         # Create Sampler on pre-defined mode
         num_workers = self.exp_conf.num_loader_workers
+        train_sampler = None
+        train_sampler = self.dataloader.TrainSampler(
+            data_conf=self.data_conf,
+            dataset=self.trainset,
+            batch_size=self.exp_conf.batch_size,
+            sample_mode=self.exp_conf.sample_mode,
+        )
+        '''
+        Distributed Sampler
+        '''
+        # train_sampler = self.dataloader.DistributedTrainSampler(
+        #     data_conf=self.data_conf,
+        #     dataset=self.trainset,
+        #     batch_size=self.exp_conf.batch_size,
+        # )
+
         train_loader = self.dataloader.create_data_loader(
             self.trainset,
-            sampler=self.train_sampler,
+            sampler=train_sampler,
             np_collate=False,
             length_batch=True,
             batch_size=self.exp_conf.batch_size,
@@ -69,9 +69,10 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
         return train_loader
 
     def val_dataloader(self):
+        valid_sampler = None
         valid_loader = self.dataloader.create_data_loader(
             self.valset,
-            sampler=self.valid_sampler,
+            sampler=valid_sampler,
             np_collate=False,
             length_batch=False,
             batch_size=self.exp_conf.eval_batch_size,

@@ -29,7 +29,7 @@ class MethodCallback(Callback):
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         if self.method_name in ['framediff', 'foldflow']:
-            trainer.datamodule.train_sampler.add_epoch()
+            trainer.train_dataloader.sampler.add_epoch()
 
 
 def load_callbacks(conf):
@@ -72,7 +72,7 @@ def run(conf: DictConfig) -> None:
         'precision': '32',
         'max_epochs': conf.experiment.num_epoch,  # Maximum number of epochs to train for
         'num_nodes': 1,  # Number of nodes to use for distributed training
-        "strategy": 'ddp',
+        # "strategy": 'ddp',
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),

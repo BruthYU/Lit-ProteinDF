@@ -29,7 +29,7 @@ class framediff_Lightning_Model(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, **kwargs):
         loss, aux_data = self.loss_fn(batch)
-        self.log("global_step", self.global_step, on_step=True, on_epoch=True, prog_bar=True)
+        # self.log("global_step", self.global_step, on_step=True, on_epoch=True, prog_bar=True)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
@@ -98,8 +98,8 @@ class framediff_Lightning_Model(pl.LightningModule):
             loss: Final training loss scalar.
             aux_data: Additional logging data.
         """
-        if self.model_conf.embed_self_conditioning and random.random() > 0.5:
-            with torch.no_grad:
+        if self.model_conf.embed.embed_self_conditioning and random.random() > 0.5:
+            with torch.no_grad():
                 batch = self.self_conditioning(batch)
         model_out = self.model(batch)
         bb_mask = batch['res_mask']
@@ -136,7 +136,7 @@ class framediff_Lightning_Model(pl.LightningModule):
             + trans_x0_loss * (batch['t'] <= self.exp_conf.trans_x0_threshold)
         )
         trans_loss *= self.exp_conf.trans_loss_weight
-        trans_loss *= int(self._diff_conf.diffuse_trans)
+        trans_loss *= int(self.frame_conf.diffuse_trans)
 
         '''Rotation loss'''
         if self.exp_conf.separate_rot_loss:
@@ -169,7 +169,7 @@ class framediff_Lightning_Model(pl.LightningModule):
             ) / (loss_mask.sum(dim=-1) + 1e-10)
             rot_loss *= self.exp_conf.rot_loss_weight
             rot_loss *= batch['t'] > self.exp_conf.rot_loss_t_threshold
-        rot_loss *= int(self._diff_conf.diffuse_rot)
+        rot_loss *= int(self.frame_conf.diffuse_rot)
 
         '''Backbone atom loss'''
         pred_atom37 = model_out['atom37'][:, :, :5]
