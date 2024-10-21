@@ -10,3 +10,5 @@ hydra:
   sweep:
     dir: ./hydra_train/${now:%Y-%m-%d_%H-%M-%S}
     subdir: ${hydra.job.num}
+  job:
+    chdir: True
