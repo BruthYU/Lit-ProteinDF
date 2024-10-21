@@ -7,3 +7,4 @@ preprocess/grammar.py
 preprocess/.cache
 evaluate/eval_data
 /lightning/hydra_outputs/
+/lightning/hydra_inference/
