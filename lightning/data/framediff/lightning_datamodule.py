@@ -39,21 +39,21 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
     def train_dataloader(self):
         # Create Sampler on pre-defined mode
         num_workers = self.exp_conf.num_loader_workers
-        train_sampler = None
-        train_sampler = self.dataloader.TrainSampler(
-            data_conf=self.data_conf,
-            dataset=self.trainset,
-            batch_size=self.exp_conf.batch_size,
-            sample_mode=self.exp_conf.sample_mode,
-        )
-        '''
-        Distributed Sampler
-        '''
-        # train_sampler = self.dataloader.DistributedTrainSampler(
+
+        # train_sampler = self.dataloader.TrainSampler(
         #     data_conf=self.data_conf,
         #     dataset=self.trainset,
         #     batch_size=self.exp_conf.batch_size,
+        #     sample_mode=self.exp_conf.sample_mode,
         # )
+        '''
+        Distributed Sampler
+        '''
+        train_sampler = self.dataloader.DistributedTrainSampler(
+            data_conf=self.data_conf,
+            dataset=self.trainset,
+            batch_size=self.exp_conf.batch_size,
+        )
 
         train_loader = self.dataloader.create_data_loader(
             self.trainset,

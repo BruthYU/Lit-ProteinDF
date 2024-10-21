@@ -72,13 +72,16 @@ def run(conf: DictConfig) -> None:
         'precision': '32',
         'max_epochs': conf.experiment.num_epoch,  # Maximum number of epochs to train for
         'num_nodes': 1,  # Number of nodes to use for distributed training
-        # "strategy": 'ddp',
+        "strategy": 'ddp',
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),
+        'replace_sampler_ddp': False
+
     }
 
     trainer = Trainer(**trainer_config)
+
     trainer.fit(model_interface.model, data_interface.datamodule)
     print(trainer_config)
 

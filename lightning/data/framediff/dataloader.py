@@ -312,8 +312,8 @@ class DistributedTrainSampler(data.Sampler):
                  data_conf,
                  dataset,
                  batch_size,
-                 num_replicas: Optional[int] = None,
-                 rank: Optional[int] = None, shuffle: bool = True,
+                 num_replicas: Optional[int] = 1,
+                 rank: Optional[int] = 0, shuffle: bool = True,
                  seed: int = 0, drop_last: bool = False) -> None:
         if num_replicas is None:
             if not dist.is_available():
