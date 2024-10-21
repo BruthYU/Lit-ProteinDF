@@ -6,10 +6,15 @@ inference:
   gpu_id: null  # CUDA GPU to use
   seed: 123
 
-  # Directory of software, weights, and outputs.
-  pt_hub_dir: ./.cache/torch/
-  output_dir: ./inference_outputs/
 
+
+  # Output will be stored in the hydra output subdir
+  # For example: lightning/hydra_inference/2024-10-21_12-12-09/framediff_outputs
+  output_dir: ./framediff_outputs/
+
+  # ${hydra:runtime.cwd} = Lit-ProteinDF/lightning
+  # Directory of software, weights, and outputs.
+  pt_hub_dir: ${hydra:runtime.cwd}/.cache/torch/
   # Path to model weights.
   weights_path: ${hydra:runtime.cwd}/ckpt/paper.pth
 
