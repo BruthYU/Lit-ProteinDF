@@ -262,6 +262,8 @@ class TrainSampler(data.Sampler):
         return self.sampler_len
 
 
+
+# TODO Wrapper Mode
 class DistributedTrainSampler(data.Sampler):
     r"""Sampler that restricts data loading to a subset of the dataset.
 
