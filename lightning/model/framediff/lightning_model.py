@@ -7,7 +7,6 @@ import torch.optim.lr_scheduler as lrs
 import pytorch_lightning as pl
 import os
 import torch.nn as nn
-from lightning.utils.utils import get_text_logger
 import ipdb
 from lightning.model.framediff import score_network
 from lightning.data.framediff import se3_diffuser

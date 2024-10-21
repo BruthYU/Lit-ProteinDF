@@ -48,11 +48,11 @@ def load_callbacks(conf):
         callback_list.append(plc.LearningRateMonitor(
             logging_interval=None))
     # Epoch callback
-    callback_list.append(MethodCallback(conf.dataset.name))
+    callback_list.append(MethodCallback(conf.method_name))
     return callback_list
 
 
-@hydra.main(version_base=None, config_path="config", config_name="config")
+@hydra.main(version_base=None, config_path="config", config_name="train")
 def run(conf: DictConfig) -> None:
 
     pl.seed_everything(conf.experiment.seed)
@@ -62,7 +62,7 @@ def run(conf: DictConfig) -> None:
     model_interface = MInterface(conf)
 
     gpu_count = torch.cuda.device_count()
-    conf.experiment.steps_per_epoch = math.ceil(len(data_interface.lightning_datamodule.trainset)
+    conf.experiment.steps_per_epoch = math.ceil(len(data_interface.datamodule.trainset)
                                                 / conf.experiment.batch_size / gpu_count)
     LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, batch_size {conf.experiment.batch_size}")
 

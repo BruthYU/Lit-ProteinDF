@@ -18,10 +18,10 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
         self.data_conf = conf.dataset
         self.exp_conf = conf.experiment
         self.frame_conf = conf.frame
-        self.method = self.data_conf.name
-        self.data_module = self.init_data_module(self.method)
+        self.method_name = conf.method_name
+        self.data_module = self.init_data_module(self.method_name)
         # import utils for to create dataloader
-        self.dataloader = importlib.import_module(f'lightning.data.{self.method}.dataloader')
+        self.dataloader = importlib.import_module(f'lightning.data.{self.method_name}.dataloader')
         self.device = 'cuda:0'
 
     def setup(self, stage=None):

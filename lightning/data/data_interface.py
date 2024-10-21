@@ -12,7 +12,7 @@ class DInterface():
     def __init__(self, conf):
         # self.lightning_model
         self.conf = conf
-        self.lightning_datamodule = self.init_lightning_datamodule(self.conf.dataset.name)
+        self.lightning_datamodule = self.init_lightning_datamodule(self.conf.method_name)
         self.datamodule = self.instancialize_lightning_model(self.lightning_datamodule, self.conf)
 
     def init_lightning_datamodule(self, name):

@@ -6,7 +6,7 @@ class MInterface():
     def __init__(self, conf):
         # self.lightning_model
         self.conf = conf
-        self.lightning_model = self.init_lightning_model(self.conf.dataset.name.lower())
+        self.lightning_model = self.init_lightning_model(self.conf.method_name)
         self.model = self.instancialize_lightning_model(self.lightning_model, self.conf)
 
     def init_lightning_model(self, name):

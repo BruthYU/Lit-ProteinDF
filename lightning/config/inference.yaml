@@ -1,0 +1,11 @@
+defaults:
+  - sampler: framediff
+  - method: framediff
+
+
+hydra:
+  run:
+    dir: ./hydra_inference/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: ./hydra_inference/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${hydra.job.num}
