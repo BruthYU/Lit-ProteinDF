@@ -10,7 +10,7 @@ inference:
 
   # Output will be stored in the hydra output subdir
   # For example: lightning/hydra_inference/2024-10-21_12-12-09/framediff_outputs
-  output_dir: ./framediff_outputs/
+  output_dir: ${hydra.output_subdir}/framediff_outputs/
 
   # ${hydra:runtime.cwd} = Lit-ProteinDF/lightning
   # Directory of software, weights, and outputs.

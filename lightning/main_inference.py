@@ -1,26 +1,20 @@
-import hydra
 from omegaconf import DictConfig
-import os
-import pickle
-
-import logging
-from time import time
-import os
+import time
 import hydra
 import logging
-import pickle
-import struct
-from omegaconf import OmegaConf,open_dict
+from sampler import SInterface
+
 
 LOG = logging.getLogger(__name__)
 @hydra.main(version_base=None, config_path="config", config_name="inference")
 def run(conf: DictConfig) -> None:
-    myconf = conf
-    LOG.info(f'hydra.utils.get_original_cwd(): {hydra.utils.get_original_cwd()}')
-
-    with open(f'log.pkl', 'wb') as f:
-        pickle.dump(
-            {'all_UP': 1}, f)
+    Sampler = SInterface(conf)
+    # Read model checkpoint.
+    LOG.info('Starting inference')
+    start_time = time.time()
+    Sampler.sampler.run_sampling()
+    elapsed_time = time.time() - start_time
+    LOG.info(f'Finished in {elapsed_time:.2f}s')
 
 
 if __name__ == '__main__':
