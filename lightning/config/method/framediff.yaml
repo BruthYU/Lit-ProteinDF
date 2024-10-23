@@ -101,8 +101,7 @@ experiment:
 
   # Checkpoint directory to warm start from.
   warm_start: null
-  use_warm_start_conf: False
-  ckpt_dir: ./ckpt/
+  ckpt_dir: ${hydra:runtime.cwd}/ckpts/warm/best.ckpt
 
   # Loss weights.
   trans_loss_weight: 1.0

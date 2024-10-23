@@ -14,9 +14,9 @@ inference:
 
   # ${hydra:runtime.cwd} = Lit-ProteinDF/lightning
   # Directory of software, weights, and outputs.
-  pt_hub_dir: ${hydra:runtime.cwd}/.cache/torch/
+  pt_hub_dir: ${hydra:runtime.cwd}/ckpts/torch/
   # Path to model weights.
-  weights_path: ${hydra:runtime.cwd}/ckpt/paper.pth
+  weights_path: ${hydra:runtime.cwd}/ckpts/inference/paper.pth
 
   diffusion:
     # Number of steps.

@@ -20,6 +20,7 @@ import random
 import torch.distributed as dist
 import math
 from typing import Optional
+from torch.utils.data.distributed import DistributedSampler
 Protein = protein.Protein
 
 # Global map from chain characters to integers.
@@ -263,7 +264,6 @@ class TrainSampler(data.Sampler):
 
 
 
-# TODO Wrapper Mode
 class DistributedTrainSampler(data.Sampler):
     r"""Sampler that restricts data loading to a subset of the dataset.
 
@@ -314,8 +314,8 @@ class DistributedTrainSampler(data.Sampler):
                  data_conf,
                  dataset,
                  batch_size,
-                 num_replicas: Optional[int] = 1,
-                 rank: Optional[int] = 0, shuffle: bool = True,
+                 num_replicas: Optional[int] = None,
+                 rank: Optional[int] = None, shuffle: bool = True,
                  seed: int = 0, drop_last: bool = False) -> None:
         if num_replicas is None:
             if not dist.is_available():
@@ -402,3 +402,4 @@ class DistributedTrainSampler(data.Sampler):
             epoch (int): Epoch number.
         """
         self.epoch = self.epoch + 1
+

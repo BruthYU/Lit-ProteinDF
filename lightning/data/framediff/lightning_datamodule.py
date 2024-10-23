@@ -60,7 +60,7 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
             sampler=train_sampler,
             np_collate=False,
             length_batch=True,
-            batch_size=self.exp_conf.batch_size,
+            batch_size=self.exp_conf.batch_size // train_sampler.num_replicas,
             shuffle=False,
             num_workers=num_workers,
             drop_last=False,

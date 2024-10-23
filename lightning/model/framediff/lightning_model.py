@@ -75,8 +75,8 @@ class framediff_Lightning_Model(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.exp_conf.learning_rate, betas=(0.9, 0.999),
                                       weight_decay=self.exp_conf.weight_decay)
-        schecular = self.get_schedular(optimizer, self.exp_conf.lr_scheduler)
-        return [optimizer], [{"scheduler": schecular, "interval": "step"}]
+        schedular = self.get_schedular(optimizer, self.exp_conf.lr_scheduler)
+        return [optimizer], [{"scheduler": schedular, "interval": "step"}]
 
     def lr_scheduler_step(self, *args, **kwargs):
         scheduler = self.lr_schedulers()
@@ -98,9 +98,9 @@ class framediff_Lightning_Model(pl.LightningModule):
             loss: Final training loss scalar.
             aux_data: Additional logging data.
         """
-        if self.model_conf.embed.embed_self_conditioning and random.random() > 0.5:
-            with torch.no_grad():
-                batch = self.self_conditioning(batch)
+        # if self.model_conf.embed.embed_self_conditioning and random.random() > 0.5:
+        #     with torch.no_grad():
+        #         batch = self.self_conditioning(batch)
         model_out = self.model(batch)
         bb_mask = batch['res_mask']
         diffuse_mask = 1 - batch['fixed_mask']
