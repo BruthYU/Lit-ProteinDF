@@ -25,4 +25,17 @@ from lightning.model.framediff.lightning_model import framediff_Lightning_Model
 
 class Sampler:
     def __init__(self, conf: DictConfig):
+        self.conf = conf
+        self.infer_conf = conf.inference
+        self.diff_conf = self.infer_conf.diffustion
+        self.sample_conf = self.infer_conf.samples
+
+        self._rng = np.random.default_rng(self.infer_conf.seed)
+        self.inference_ckpt = self.infer_conf.weights_path
+        self.model = framediff_Lightning_Model.load_from_checkpoint(self.inference_ckpt)
+
+    def inference_fn(self):
         pass
+
+
+
