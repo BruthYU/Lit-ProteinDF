@@ -26,17 +26,17 @@ from evaluate.openfold.utils import rigid_utils as ru
 from preprocess.tools import all_atom
 
 
-class Sampler:
+class framediff_Sampler:
     def __init__(self, conf: DictConfig):
 
         self.conf = conf
-        self.infer_conf = conf.inference
-        self.diff_conf = self.infer_conf.diffustion
+        self.infer_conf = conf.sampler.inference
+        self.diff_conf = self.infer_conf.diffusion
         self.sample_conf = self.infer_conf.samples
         self.data_conf = self.conf.dataset
         self.model_conf = self.conf.model
         self.log = logging.getLogger(__name__)
-        self.output_dir = self.sample_conf.output_dir
+        self.output_dir = self.infer_conf.output_dir
 
         # Set-up accelerator
         if torch.cuda.is_available():
@@ -105,7 +105,7 @@ class Sampler:
             for t in reverse_steps:
                 if t > min_t:
                     sample_feats = self.set_t_feats(sample_feats, t, t_placeholder)
-                    model_out = self.lightning_model(sample_feats)
+                    model_out = self.lightning_model.model(sample_feats)
                     rot_score = model_out['rot_score']
                     trans_score = model_out['trans_score']
                     rigid_pred = model_out['rigids']

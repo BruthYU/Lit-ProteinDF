@@ -9,7 +9,8 @@ LOG = logging.getLogger(__name__)
 @hydra.main(version_base=None, config_path="config", config_name="inference")
 def run(conf: DictConfig) -> None:
     Sampler = SInterface(conf)
-    # Read model checkpoint.
+
+    # Sampler Instance: Sampler.sampler
     LOG.info('Starting inference')
     start_time = time.time()
     Sampler.sampler.run_sampling()

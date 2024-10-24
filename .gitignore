@@ -8,3 +8,4 @@ preprocess/.cache
 evaluate/eval_data
 /lightning/hydra_train/
 /lightning/hydra_inference/
+/lightning/ckpts/
