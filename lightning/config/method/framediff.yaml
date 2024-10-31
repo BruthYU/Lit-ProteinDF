@@ -4,9 +4,10 @@ dataset:
   cache_dir: /home/yu/HENU/westlake/Lit-ProteinDF/preprocess/.cache/jsonl
   cluster_path: ${hydra:runtime.cwd}/data/framediff/clusters-by-entity-30.txt
   min_t: 0.01
-  samples_per_eval_length: 1
+  samples_per_eval_length: 4
   num_eval_lengths: 10
   num_t: 100
+  split_ratio: 0.5
 
 
 
