@@ -21,7 +21,7 @@ from preprocess.tools import utils as du
 from evaluate.openfold.utils import rigid_utils
 from evaluate.openfold.data import data_transforms
 
-_BYTES_PER_MEGABYTE = int(1e6)
+_BYTES_PER_PROTEIN = int(9e5)
 
 def get_list_chunk_slices(lst, chunk_size):
     return [(i, i + chunk_size) for i in range(0, len(lst), chunk_size)]
@@ -249,8 +249,8 @@ class BuildCache:
 
         # Initialize local cache with lmdb
         self._local_cache = lmdb.open(
-            self.cache_path, map_size=(1024**3) * 60
-        )  # 1GB * 60
+            self.cache_path, map_size=(1024**3) * 13
+        )  # 1GB * 13
 
         st_time = time.time()
 
@@ -274,7 +274,7 @@ class BuildCache:
                     ) as pool:
                         shared_list = smm.ShareableList(
                             [
-                                bytes(3 * _BYTES_PER_MEGABYTE)
+                                bytes(_BYTES_PER_PROTEIN)
                                 for _ in range(len(self.csv))
                             ]
                         )

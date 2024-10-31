@@ -20,6 +20,8 @@ import pandas as pd
 
 from preprocess.tools import utils as du, errors, parsers
 
+
+
 # Define the parser
 parser = argparse.ArgumentParser(
     description='mmCIF processing script.')
@@ -47,7 +49,7 @@ parser.add_argument(
     '--max_len',
     help='Max length of protein.',
     type=int,
-    default=512)
+    default=256)
 parser.add_argument(
     '--num_processes',
     help='Number of processes.',
@@ -83,7 +85,7 @@ def process_line(line, max_len: int, write_dir: str):
         All other errors are unexpected and are propogated.
     """
     metadata = {}
-    line_name = line['name'].split('.')[0].lower()
+    line_name = line['name'].lower()
 
     metadata['pdb_name'] = line_name
 
@@ -133,6 +135,7 @@ def process_line(line, max_len: int, write_dir: str):
     # Write features to pickles.
     du.write_pkl(processed_line_path, complex_feats)
 
+
     # Return metadata
     return metadata
 
@@ -140,6 +143,7 @@ def process_line(line, max_len: int, write_dir: str):
 def process_serially(
         lines, max_len, write_dir):
     all_metadata = []
+    write_count = 0
     for i, line in enumerate(lines):
         line = json.loads(line)
         line_name = line['name']
@@ -149,11 +153,13 @@ def process_serially(
                 line,
                 max_len,
                 write_dir)
+            write_count = write_count + 1
             elapsed_time = time.time() - start_time
             print(f'Finished {line_name} in {elapsed_time:2.2f}s')
             all_metadata.append(metadata)
         except errors.DataError as e:
             print(f'Failed {line_name}: {e}')
+        assert write_count == len(all_metadata), "write_count != len(all_metadata) "
     return all_metadata
 
 
@@ -183,8 +189,9 @@ def main(args):
     jsonl_path = args.jsonl_path
     with open(jsonl_path) as f:
         lines = f.readlines()
-    lines = lines[:30]
+    # lines = lines[:30]
     total_num_paths = len(lines)
+
     write_dir = args.write_dir
     if not os.path.exists(write_dir):
         os.makedirs(write_dir)
