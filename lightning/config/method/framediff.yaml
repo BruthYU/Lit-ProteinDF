@@ -4,7 +4,7 @@ dataset:
   cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
   cluster_path: ${hydra:runtime.cwd}/data/framediff/clusters-by-entity-30.txt
   min_t: 0.01
-  samples_per_eval_length: 8
+  #  samples_per_eval_length: 12
   #  num_eval_lengths: 10
   num_t: 100
   split_ratio: 0.1
@@ -68,9 +68,9 @@ experiment:
 
   # Training arguments
   log_freq: 1000
-  batch_size: 16
+  batch_size: 2
   steps_per_epoch: null
-  eval_batch_size: ${dataset.samples_per_eval_length}
+  eval_batch_size: 1
   num_loader_workers: 5
   num_epoch: 500_000
   weight_decay: 0

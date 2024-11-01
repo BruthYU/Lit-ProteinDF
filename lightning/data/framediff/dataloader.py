@@ -188,7 +188,11 @@ class BaseSampler(data.Sampler):
             dataset,
             batch_size,
             sample_mode,
-        ):
+            ):
+        if not dist.is_available():
+            raise RuntimeError("Requires distributed package to be available")
+        self.num_replicas = dist.get_world_size()
+
         self._log = logging.getLogger(__name__)
         self._data_conf = data_conf
         self._dataset = dataset
@@ -198,7 +202,7 @@ class BaseSampler(data.Sampler):
         self._batch_size = batch_size
         self.epoch = 0
         self._sample_mode = sample_mode
-        self.sampler_len = len(self._dataset_indices) * self._batch_size
+        self.sampler_len = len(self._dataset_indices)
 
         if self._sample_mode in ['cluster_length_batch', 'cluster_time_batch']:
             self._pdb_to_cluster = self._read_clusters()
@@ -403,4 +407,9 @@ class DistributedTrainSampler(data.Sampler):
             epoch (int): Epoch number.
         """
         self.epoch = self.epoch + 1
+
+
+
+
+
 
