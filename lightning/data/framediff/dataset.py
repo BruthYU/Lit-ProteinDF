@@ -79,38 +79,40 @@ class framediff_Dataset(data.Dataset):
             for _, value in txn.cursor():
                 result_tuples.append(pickle.loads(value))
 
-        split_index = math.floor(len(self.csv) * self.data_conf.split_ratio)
+        split_index = math.floor(len(self.csv) * (1 - self.data_conf.split_ratio))
 
 
         # Split the dataset
         if self.is_training:
-            result_tuples = result_tuples[:-split_index]
-            self.csv = self.csv[:-split_index]
+            result_tuples = result_tuples[:split_index]
+            self.csv = self.csv[:split_index]
         else:
-            result_tuples = result_tuples[-split_index:]
-            self.csv = self.csv[-split_index:]
+            result_tuples = result_tuples[split_index:]
+            self.csv = self.csv[split_index:]
 
 
-            # build dictionary for pdb_name: idx
-            name_idx_dict = {}
-            for idx, pdb_name in enumerate(self.csv['pdb_name']):
-                name_idx_dict[pdb_name] = idx
-            # sample chain batch with the same length
-            self.csv.drop_duplicates(subset=['pdb_name'], keep='last')
-            all_lengths = np.sort(self.csv.modeled_seq_len.unique())
-            length_indices = (len(all_lengths) - 1) * np.linspace(
-                0.0, 1.0, self.data_conf.num_eval_lengths)
-            length_indices = length_indices.astype(int)
-            eval_lengths = all_lengths[length_indices]
-            eval_csv = self.csv[self.csv.modeled_seq_len.isin(eval_lengths)]
-            # Fix a random seed to get the same split each time.
-            eval_csv = eval_csv.groupby('modeled_seq_len').sample(
-                self.data_conf.samples_per_eval_length, replace=True, random_state=123)
-            eval_csv = eval_csv.sort_values('modeled_seq_len', ascending=False)
-            self.csv = eval_csv
 
-            result_tuples_indices = [name_idx_dict[name] for name in self.csv['pdb_name']]
-            result_tuples = [result_tuples[idx] for idx in result_tuples_indices]
+
+            # # build dictionary for pdb_name: idx
+            # name_idx_dict = {}
+            # for idx, pdb_name in enumerate(self.csv['pdb_name']):
+            #     name_idx_dict[pdb_name] = idx
+            # # sample chain batch with the same length
+            # self.csv.drop_duplicates(subset=['pdb_name'], keep='last')
+            # all_lengths = np.sort(self.csv.modeled_seq_len.unique())
+            # length_indices = (len(all_lengths) - 1) * np.linspace(
+            #     0.0, 1.0, self.data_conf.num_eval_lengths)
+            # length_indices = length_indices.astype(int)
+            # eval_lengths = all_lengths[length_indices]
+            # eval_csv = self.csv[self.csv.modeled_seq_len.isin(eval_lengths)]
+            # # Fix a random seed to get the same split each time.
+            # eval_csv = eval_csv.groupby('modeled_seq_len').sample(
+            #     self.data_conf.samples_per_eval_length, replace=True, random_state=123)
+            # eval_csv = eval_csv.sort_values('modeled_seq_len', ascending=False)
+            # self.csv = eval_csv
+            #
+            # result_tuples_indices = [name_idx_dict[name] for name in self.csv['pdb_name']]
+            # result_tuples = [result_tuples[idx] for idx in result_tuples_indices]
 
 
 

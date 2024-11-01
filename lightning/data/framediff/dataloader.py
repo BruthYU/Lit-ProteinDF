@@ -178,7 +178,8 @@ def create_data_loader(
         multiprocessing_context='fork' if num_workers != 0 else None,
         )
 
-class TrainSampler(data.Sampler):
+
+class BaseSampler(data.Sampler):
 
     def __init__(
             self,
@@ -191,7 +192,7 @@ class TrainSampler(data.Sampler):
         self._log = logging.getLogger(__name__)
         self._data_conf = data_conf
         self._dataset = dataset
-        self._data_csv = self._dataset.csv
+        self._data_csv = self._dataset.csv.reset_index(drop=True)
         self._dataset_indices = list(range(len(self._data_csv)))
         self._data_csv['index'] = self._dataset_indices
         self._batch_size = batch_size

@@ -9,7 +9,6 @@ import logging
 import pandas as pd
 import shutil
 from datetime import datetime
-from biotite.sequence.io import fasta
 import GPUtil
 from typing import Optional
 
