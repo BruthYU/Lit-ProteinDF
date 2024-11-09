@@ -18,11 +18,13 @@ from lightning.data.foldflow.rigid_helpers import assemble_rigid_mat, extract_tr
 from evaluate.openfold.utils import rigid_utils
 from scipy.spatial.transform import Rotation
 from lightning.data.foldflow.so3_helpers import so3_relative_angle
+import se3_fm
+
 
 class foldflow_Dataset(data.Dataset):
     def __init__(self,
                  data_conf = None,
-                 gen_model = None,
+                 fm_conf = None,
                  is_training= True,
                  is_OT = False,
                  ot_fn = "exact",
@@ -31,6 +33,7 @@ class foldflow_Dataset(data.Dataset):
                  ):
         super().__init__()
         self.data_conf = data_conf
+        self.fm_conf = fm_conf
         self.is_training = is_training
 
 
@@ -40,7 +43,7 @@ class foldflow_Dataset(data.Dataset):
         self.cache_to_memory()
 
         # Could be Diffusion, CFM, OT-CFM or SF2M
-        self._gen_model = gen_model
+        self.gen_model = se3_fm.SE3FlowMatcher(self.fm_conf)
         self.is_OT = is_OT
         self.reg = reg
         self.max_same_res = self.get_max_same_res(max_same_res)
@@ -83,7 +86,7 @@ class foldflow_Dataset(data.Dataset):
         if self.is_training and not self.is_OT:
             # Sample t and flow.
             t = rng.uniform(self.data_conf.min_t, 1.0)
-            gen_feats_t = self._gen_model.forward_marginal(
+            gen_feats_t = self.gen_model.forward_marginal(
                 rigids_0=gt_bb_rigid, t=t, flow_mask=None, rigids_1=None
             )
         elif self.is_training and self.is_OT:
@@ -97,7 +100,7 @@ class foldflow_Dataset(data.Dataset):
             if n_samples == 1 or n_samples == 0:
                 # only one sample, we can't do OT
                 # self._log.info(f"Only one sample of length {n_res}, skipping OT")
-                gen_feats_t = self._gen_model.forward_marginal(
+                gen_feats_t = self.gen_model.forward_marginal(
                     rigids_0=gt_bb_rigid, t=t, flow_mask=None, rigids_1=None
                 )
             else:
@@ -169,7 +172,7 @@ class foldflow_Dataset(data.Dataset):
 
                 rigids_1 = assemble_rigid_mat(paired_rot, paired_trans)
 
-                gen_feats_t = self._gen_model.forward_marginal(
+                gen_feats_t = self.gen_model.forward_marginal(
                     rigids_0=gt_bb_rigid, t=t, flow_mask=None, rigids_1=rigids_1
                 )
 
