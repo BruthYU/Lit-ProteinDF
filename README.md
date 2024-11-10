@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="document/img.png" width="150px">
+[//]: # (<img src="document/img.png" width="150px">)
 
 **A Collection of Protein Structure Generation Diffusion Models bases on Pytorch Lightning⚡.**
 
