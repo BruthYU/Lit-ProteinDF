@@ -6,5 +6,5 @@
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-![Static Badge](https://img.shields.io/badge/last_commit-May-blue)
+![Static Badge](https://img.shields.io/badge/last_commit-Nov-blue)
 ![](https://img.shields.io/badge/PRs-Welcome-red)
