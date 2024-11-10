@@ -2,7 +2,7 @@
 
 <img src="document/img.png" width="150px">
 
-**A Collection of Diffusion Models for Protein Structure Generation bases on Pytorch Lightning⚡.**
+**A Collection of Protein Structure Generation Diffusion Models bases on Pytorch Lightning⚡.**
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
