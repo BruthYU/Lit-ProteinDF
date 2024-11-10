@@ -22,7 +22,7 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
         self.data_module = self.init_data_module(self.method_name)
         # import utils for to create dataloader
         self.dataloader = importlib.import_module(f'lightning.data.{self.method_name}.dataloader')
-        self.device = 'cuda:0'
+
 
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
