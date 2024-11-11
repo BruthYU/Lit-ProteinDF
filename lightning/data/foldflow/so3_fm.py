@@ -23,7 +23,7 @@ from .so3_helpers import (
     log,
 )
 
-from foldflow.utils.igso3 import _batch_sample
+from lightning.data.foldflow.igso3 import _batch_sample
 
 
 def _flat_vec(vec, return_batch=False):

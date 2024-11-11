@@ -18,7 +18,7 @@ from lightning.data.foldflow.rigid_helpers import assemble_rigid_mat, extract_tr
 from evaluate.openfold.utils import rigid_utils
 from scipy.spatial.transform import Rotation
 from lightning.data.foldflow.so3_helpers import so3_relative_angle
-import se3_fm
+import lightning.data.foldflow.se3_fm as se3_fm
 
 
 class foldflow_Dataset(data.Dataset):
