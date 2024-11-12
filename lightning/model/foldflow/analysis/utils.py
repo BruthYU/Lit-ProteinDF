@@ -4,8 +4,8 @@ import re
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from foldflow.data import protein, residue_constants
-from openfold.utils import rigid_utils
+from preprocess.tools import protein, residue_constants
+from evaluate.openfold.utils import rigid_utils
 
 CA_IDX = residue_constants.atom_order["CA"]
 Rigid = rigid_utils.Rigid

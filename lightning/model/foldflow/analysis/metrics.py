@@ -7,7 +7,7 @@ from tmtools import tm_align
 import lightning.data.foldflow.dataloader as du
 from evaluate.openfold.np import residue_constants
 from evaluate.openfold.np.relax import amber_minimize
-from .analysis import utils as au
+from . import utils as au
 
 CA_IDX = residue_constants.atom_order["CA"]
 

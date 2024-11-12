@@ -35,6 +35,14 @@ UNPADDED_FEATS = [
 RIGID_FEATS = ["rigids_0", "rigids_t"]
 PAIR_FEATS = ["rel_rots"]
 
+def move_to_np(x):
+    if isinstance(x, torch.Tensor):
+        return x.cpu().detach().numpy()
+    if isinstance(x, np.ndarray):
+        return x
+    else:
+        raise ValueError(f"Expected torch.Tensor or np.ndarray, got {type(x)}.")
+
 def pad(x: np.ndarray, max_len: int, pad_idx=0, use_torch=False, reverse=False):
     """Right pads dimension of numpy array.
 

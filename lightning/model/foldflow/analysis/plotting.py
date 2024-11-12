@@ -9,8 +9,8 @@ from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 from plotly.subplots import make_subplots
 
-from foldflow.data import utils as du
-from tools.analysis import utils as au
+from lightning.data.foldflow import dataloader as du
+from . import utils as au
 
 
 def create_scatter(

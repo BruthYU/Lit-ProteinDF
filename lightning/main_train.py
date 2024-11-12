@@ -36,8 +36,8 @@ def load_callbacks(conf):
     callback_list = []
     # Checkpoint Callback
     callback_list.append(plc.ModelCheckpoint(
-        monitor='val_loss',
-        filename='best-{epoch:02d}-{val_loss:.3f}',
+        monitor='train_loss',
+        filename='best-{epoch:02d}-{train_loss:.3f}',
         save_top_k=2,
         mode='min',
         save_last=True,
