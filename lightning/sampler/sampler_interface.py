@@ -10,7 +10,7 @@ class SInterface():
         self.sampler = self.instancialize_lightning_model(self.sampler_module, self.conf)
 
     def init_sampler_module(self, name):
-        return getattr(importlib.import_module(f'sampler.{name}.sampler'), f'{name}_Sampler')
+        return getattr(importlib.import_module(f'sampler.{name}.sampler_module'), f'{name}_Sampler')
 
     def instancialize_lightning_model(self, sampler, conf):
         return sampler(conf)

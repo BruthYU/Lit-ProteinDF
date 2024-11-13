@@ -130,3 +130,37 @@ experiment:
   noise_scale: 1.0
   # Filled in during training.
   num_parameters: null
+
+inference:
+  name: null
+  gpu_id: 0  # CUDA GPU to use
+  seed: 123
+  full_ckpt_dir: ./ckpt_dir/inference/baseline/
+
+  # Directory of software, weights, and outputs.
+  pt_hub_dir: ${hydra:runtime.cwd}/ckpts/torch/
+  output_dir: ./foldflow_outputs
+
+  # Path to model weights.
+  weights_path: ${hydra:runtime.cwd}/ckpts/foldflow/last.ckpt
+
+  flow:
+    # Number of steps.
+    num_t: 500
+    # Analogous to sampling temperature.
+    noise_scale: 0.1
+    # Final t.
+    min_t: 0.01
+
+  samples:
+    # Number of backbone samples per sequence length.
+    samples_per_length: 5
+    # Number of ESMFdold samples per backbone sample.
+    seq_per_sample: 5
+    # Minimum sequence length to sample.
+    min_length: 100
+    # Maximum sequence length to sample.
+    max_length: 110
+    # gap between lengths to sample. i.e. this script will sample all lengths
+    # in range(min_length, max_length, length_step)
+    length_step: 50
