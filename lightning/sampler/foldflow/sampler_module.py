@@ -30,7 +30,7 @@ import logging
 class foldflow_Sampler:
     def __init__(self, conf: DictConfig, is_training=False):
 
-        self.inference_ready = False
+
         self.is_training = is_training
         self.conf = conf
         self.infer_conf = conf.inference
@@ -59,20 +59,10 @@ class foldflow_Sampler:
         # Load model from checkpoint
         self._rng = np.random.default_rng(self.infer_conf.seed)
         self.inference_ckpt = self.infer_conf.weights_path
-        if is_training:
-            # Empty model
-            self.lightning_model = foldflow_Lightning_Model.load_from_checkpoint(conf)
-        else:
-            # Load from Checkpoint
-            self.inference_ready = True
-            self.lightning_model = foldflow_Lightning_Model.load_from_checkpoint(self.inference_ckpt)
+        self.lightning_model = foldflow_Lightning_Model.load_from_checkpoint(self.inference_ckpt)
 
 
-    def set_model(self, flow_matcher, model):
-        assert self.is_training, "Model in Sampler can only be changed during training for validation."
-        self.lightning_model.flow_matcher = flow_matcher
-        self.lightning_model.model = model
-        self.inference_ready = True
+
 
     def set_t_feats(self, feats, t, t_placeholder):
         feats["t"] = t * t_placeholder
@@ -176,7 +166,7 @@ class foldflow_Sampler:
             sample_length: length to sample
 
         Returns:
-            Sample outputs. See train.inference_fn.
+            Sample outputs. See self.lightning_model.inference_fn.
         """
         # Process motif features.
         res_mask = np.ones(sample_length)
@@ -205,7 +195,7 @@ class foldflow_Sampler:
 
 
         # Run inference
-        sample_out = self.inference_fn(
+        sample_out = self.lightning_model.inference_fn(
             init_feats,
             num_t=self.fm_conf.num_t,
             min_t=self.fm_conf.min_t,
@@ -216,108 +206,7 @@ class foldflow_Sampler:
         return tree.map_structure(lambda x: x[:, 0], sample_out)
 
 
-    def inference_fn(
-        self,
-        data_init,
-        num_t=None,
-        min_t=None,
-        center=True,
-        aux_traj=False,
-        self_condition=True,
-        noise_scale=1.0,
-        context=None,
-    ):
-        """Inference function.
 
-        Args:
-            data_init: Initial data values for sampling.
-        """
-
-        # Run reverse process.
-        sample_feats = copy.deepcopy(data_init)
-        device = sample_feats["rigids_t"].device
-        if sample_feats["rigids_t"].ndim == 2:
-            t_placeholder = torch.ones((1,)).to(device)
-        else:
-            t_placeholder = torch.ones((sample_feats["rigids_t"].shape[0],)).to(device)
-        if num_t is None:
-            num_t = self.fm_conf.num_t
-        if min_t is None:
-            min_t = self.fm_conf.min_t
-        reverse_steps = np.linspace(min_t, 1.0, num_t)[::-1]
-        dt = reverse_steps[0] - reverse_steps[1]
-        # dt = 1/num_t
-        all_rigids = [du.move_to_np(copy.deepcopy(sample_feats["rigids_t"]))]
-        all_bb_prots = []
-        all_trans_0_pred = []
-        all_bb_0_pred = []
-        with torch.no_grad():
-            if self.model_conf.embed.embed_self_conditioning and self_condition:
-                sample_feats = self.set_t_feats(
-                    sample_feats, reverse_steps[0], t_placeholder
-                )
-                sample_feats = self.lightning_model.self_conditioning(sample_feats)
-            for t in reverse_steps:
-
-                sample_feats = self.set_t_feats(sample_feats, t, t_placeholder)
-                model_out = self.lightning_model.model(sample_feats)
-                rot_vectorfield = model_out["rot_vectorfield"]
-                trans_vectorfield = model_out["trans_vectorfield"]
-                rigid_pred = model_out["rigids"]
-                if self.model_conf.embed.embed_self_conditioning:
-                    sample_feats["sc_ca_t"] = rigid_pred[..., 4:]
-                fixed_mask = sample_feats["fixed_mask"] * sample_feats["res_mask"]
-                flow_mask = (1 - sample_feats["fixed_mask"]) * sample_feats["res_mask"]
-                rots_t, trans_t, rigids_t = self.lightning_model.flow_matcher.reverse(
-                    rigid_t=ru.Rigid.from_tensor_7(sample_feats["rigids_t"]),
-                    rot_vectorfield=du.move_to_np(rot_vectorfield),
-                    trans_vectorfield=du.move_to_np(trans_vectorfield),
-                    flow_mask=du.move_to_np(flow_mask),
-                    t=t,
-                    dt=dt,
-                    center=center,
-                    noise_scale=noise_scale,
-                )
-
-                sample_feats["rigids_t"] = rigids_t.to_tensor_7().to(device)
-                if aux_traj:
-                    all_rigids.append(du.move_to_np(rigids_t.to_tensor_7()))
-
-                # Calculate x0 prediction derived from vectorfield predictions.
-                gt_trans_0 = sample_feats["rigids_t"][..., 4:]
-                pred_trans_0 = rigid_pred[..., 4:]
-                trans_pred_0 = (
-                    flow_mask[..., None] * pred_trans_0
-                    + fixed_mask[..., None] * gt_trans_0
-                )
-                psi_pred = model_out["psi"]
-                if aux_traj:
-                    atom37_0 = all_atom.compute_backbone(
-                        ru.Rigid.from_tensor_7(rigid_pred), psi_pred
-                    )[0]
-                    all_bb_0_pred.append(du.move_to_np(atom37_0))
-                    all_trans_0_pred.append(du.move_to_np(trans_pred_0))
-                atom37_t = all_atom.compute_backbone(rigids_t, psi_pred)[0]
-                all_bb_prots.append(du.move_to_np(atom37_t))
-
-        # Flip trajectory so that it starts from t=0.
-        # This helps visualization.
-        flip = lambda x: np.flip(np.stack(x), (0,))
-        all_bb_prots = flip(all_bb_prots)
-        if aux_traj:
-            all_rigids = flip(all_rigids)
-            all_trans_0_pred = flip(all_trans_0_pred)
-            all_bb_0_pred = flip(all_bb_0_pred)
-
-        ret = {
-            "prot_traj": all_bb_prots,
-        }
-        if aux_traj:
-            ret["rigid_traj"] = all_rigids
-            ret["trans_traj"] = all_trans_0_pred
-            ret["psi_pred"] = psi_pred[None]
-            ret["rigid_0_traj"] = all_bb_0_pred
-        return ret
 
 
 

@@ -11,8 +11,10 @@ import ipdb
 from lightning.model.framediff import score_network
 from lightning.data.framediff import se3_diffuser
 from evaluate.openfold.utils import rigid_utils as ru
+from preprocess.tools import utils as du
 from preprocess.tools import all_atom
-
+import numpy as np
+import copy
 class framediff_Lightning_Model(pl.LightningModule):
     def __init__(self, conf):
         super().__init__()
@@ -250,5 +252,107 @@ class framediff_Lightning_Model(pl.LightningModule):
         assert final_loss.shape == (batch_size,)
         assert batch_loss_mask.shape == (batch_size,)
         return normalize_loss(final_loss), aux_data
+
+    def inference_fn(
+            self,
+            data_init,
+            num_t=None,
+            min_t=None,
+            center=True,
+            aux_traj=False,
+            self_condition=True,
+            noise_scale=1.0,
+    ):
+        """Inference function.
+
+        Args:
+            data_init: Initial data values for sampling.
+        """
+
+        # Run reverse process.
+        sample_feats = copy.deepcopy(data_init)
+        device = sample_feats['rigids_t'].device
+        if sample_feats['rigids_t'].ndim == 2:
+            t_placeholder = torch.ones((1,)).to(device)
+        else:
+            t_placeholder = torch.ones(
+                (sample_feats['rigids_t'].shape[0],)).to(device)
+        if num_t is None:
+            num_t = self.data_conf.num_t
+        if min_t is None:
+            min_t = self.data_conf.min_t
+        reverse_steps = np.linspace(min_t, 1.0, num_t)[::-1]
+        dt = 1 / num_t
+        all_rigids = [du.move_to_np(copy.deepcopy(sample_feats['rigids_t']))]
+        all_bb_prots = []
+        all_trans_0_pred = []
+        all_bb_0_pred = []
+        with torch.no_grad():
+            if self.model_conf.embed.embed_self_conditioning and self_condition:
+                sample_feats = self.set_t_feats(
+                    sample_feats, reverse_steps[0], t_placeholder)
+                sample_feats = self.self_conditioning(sample_feats)
+            for t in reverse_steps:
+                if t > min_t:
+                    sample_feats = self.set_t_feats(sample_feats, t, t_placeholder)
+                    model_out = self.model(sample_feats)
+                    rot_score = model_out['rot_score']
+                    trans_score = model_out['trans_score']
+                    rigid_pred = model_out['rigids']
+                    if self.model_conf.embed.embed_self_conditioning:
+                        sample_feats['sc_ca_t'] = rigid_pred[..., 4:]
+                    fixed_mask = sample_feats['fixed_mask'] * sample_feats['res_mask']
+                    diffuse_mask = (1 - sample_feats['fixed_mask']) * sample_feats['res_mask']
+                    rigids_t = self.diffuser.reverse(
+                        rigid_t=ru.Rigid.from_tensor_7(sample_feats['rigids_t']),
+                        rot_score=du.move_to_np(rot_score),
+                        trans_score=du.move_to_np(trans_score),
+                        diffuse_mask=du.move_to_np(diffuse_mask),
+                        t=t,
+                        dt=dt,
+                        center=center,
+                        noise_scale=noise_scale,
+                    )
+                else:
+                    model_out = self.model(sample_feats)
+                    rigids_t = ru.Rigid.from_tensor_7(model_out['rigids'])
+                sample_feats['rigids_t'] = rigids_t.to_tensor_7().to(device)
+                if aux_traj:
+                    all_rigids.append(du.move_to_np(rigids_t.to_tensor_7()))
+
+                # Calculate x0 prediction derived from score predictions.
+                gt_trans_0 = sample_feats['rigids_t'][..., 4:]
+                pred_trans_0 = rigid_pred[..., 4:]
+                trans_pred_0 = diffuse_mask[..., None] * pred_trans_0 + fixed_mask[..., None] * gt_trans_0
+                psi_pred = model_out['psi']
+                if aux_traj:
+                    atom37_0 = all_atom.compute_backbone(
+                        ru.Rigid.from_tensor_7(rigid_pred),
+                        psi_pred
+                    )[0]
+                    all_bb_0_pred.append(du.move_to_np(atom37_0))
+                    all_trans_0_pred.append(du.move_to_np(trans_pred_0))
+                atom37_t = all_atom.compute_backbone(
+                    rigids_t, psi_pred)[0]
+                all_bb_prots.append(du.move_to_np(atom37_t))
+
+        # Flip trajectory so that it starts from t=0.
+        # This helps visualization.
+        flip = lambda x: np.flip(np.stack(x), (0,))
+        all_bb_prots = flip(all_bb_prots)
+        if aux_traj:
+            all_rigids = flip(all_rigids)
+            all_trans_0_pred = flip(all_trans_0_pred)
+            all_bb_0_pred = flip(all_bb_0_pred)
+
+        ret = {
+            'prot_traj': all_bb_prots,
+        }
+        if aux_traj:
+            ret['rigid_traj'] = all_rigids
+            ret['trans_traj'] = all_trans_0_pred
+            ret['psi_pred'] = psi_pred[None]
+            ret['rigid_0_traj'] = all_bb_0_pred
+        return ret
 
 
