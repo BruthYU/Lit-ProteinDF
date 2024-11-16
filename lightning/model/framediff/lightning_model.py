@@ -32,7 +32,15 @@ class framediff_Lightning_Model(pl.LightningModule):
     def training_step(self, batch, batch_idx, **kwargs):
         loss, aux_data = self.loss_fn(batch)
         # self.log("global_step", self.global_step, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        log_info = {
+            "train_loss": loss,
+            "rot_loss": aux_data["rot_loss"],
+            "trans_loss": aux_data["trans_loss"],
+            "bb_atom_loss": aux_data["bb_atom_loss"],
+            "dist_mat_loss": aux_data["dist_mat_loss"],
+            "batch_size": aux_data["examples_per_step"]
+        }
+        self.log_dict(log_info, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
