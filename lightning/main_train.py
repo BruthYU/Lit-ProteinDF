@@ -1,7 +1,6 @@
 import datetime
 import os
 import sys
-os.environ["WANDB_API_KEY"] = "97202a52488fcf2762c99ff8c68367f9bc5d4033"
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import math
@@ -14,13 +13,16 @@ from omegaconf import DictConfig
 from omegaconf import OmegaConf
 from pytorch_lightning.trainer import Trainer
 import pytorch_lightning.callbacks as plc
+from pytorch_lightning.loggers import WandbLogger
 import pytorch_lightning.loggers as plog
 from pytorch_lightning.callbacks import Callback
 from model import MInterface
 from data import DInterface
 import logging
-
+import wandb
+wandb.login(key="7878871205533d1968d0e0736c7a47eb50d4ac69")
 LOG = logging.getLogger(__name__)
+wandb_logger = WandbLogger(project=f"Lit-ProteinDF", log_model='all')
 
 class MethodCallback(Callback):
     def __init__(self, method_name):
@@ -41,7 +43,8 @@ def load_callbacks(conf):
         save_top_k=2,
         mode='min',
         save_last=True,
-        every_n_epochs=conf.experiment.ckpt_freq
+        every_n_epochs=conf.experiment.ckpt_freq,
+        dirpath=f'./checkpoints'
     ))
     # Learning Rate Callback
     if conf.experiment.lr_scheduler:
@@ -56,7 +59,6 @@ def load_callbacks(conf):
 def run(conf: DictConfig) -> None:
 
     pl.seed_everything(conf.experiment.seed)
-
     data_interface = DInterface(conf)
     data_interface.datamodule.setup()
     model_interface = MInterface(conf)
@@ -64,7 +66,9 @@ def run(conf: DictConfig) -> None:
     gpu_count = torch.cuda.device_count()
     conf.experiment.steps_per_epoch = math.ceil(len(data_interface.datamodule.trainset)
                                                 / conf.experiment.batch_size / gpu_count)
-    LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, batch_size {conf.experiment.batch_size}")
+    LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, "
+             f"batch_size {conf.experiment.batch_size}")
+
 
     trainer_config = {
         'devices': -1,  # Use all available GPUs
@@ -76,8 +80,8 @@ def run(conf: DictConfig) -> None:
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),
-        'use_distributed_sampler': False
-
+        'use_distributed_sampler': False,
+        'logger': wandb_logger
     }
 
     trainer = Trainer(**trainer_config)

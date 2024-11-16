@@ -92,6 +92,7 @@ experiment:
   torch_num_threads: 8
   num_epoch: 500
   learning_rate: 0.0001
+  lr_scheduler: False
   max_squared_res: 500000
   prefetch_factor: 100
   use_gpu: True
