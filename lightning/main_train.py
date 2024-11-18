@@ -57,10 +57,12 @@ def load_callbacks(conf):
 
 @hydra.main(version_base=None, config_path="config", config_name="train")
 def run(conf: DictConfig) -> None:
-    # Change wandb working dir to hydra chdir
-    os.environ["WANDB_DIR"] = os.path.abspath(os.getcwd())
-    wandb.login(key="7878871205533d1968d0e0736c7a47eb50d4ac69")
-    wandb_logger = WandbLogger(project=f"Lit-ProteinDF", log_model='all')
+    pl_logger = None
+    if conf.experiment.use_wandb:
+        # Change wandb working dir to hydra chdir
+        os.environ["WANDB_DIR"] = os.path.abspath(os.getcwd())
+        wandb.login(key="7878871205533d1968d0e0736c7a47eb50d4ac69")
+        pl_logger = WandbLogger(project=f"Lit-ProteinDF", log_model='all')
 
 
     pl.seed_everything(conf.experiment.seed)
@@ -89,7 +91,7 @@ def run(conf: DictConfig) -> None:
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),
         # 'use_distributed_sampler': False,
-        'logger': wandb_logger
+        'logger': pl_logger
     }
 
     trainer = Trainer(**trainer_config)

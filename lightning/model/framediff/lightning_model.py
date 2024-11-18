@@ -44,7 +44,7 @@ class framediff_Lightning_Model(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss, aux_data = self.loss_fn(batch)
-        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log('val_loss', loss)
         return loss
 
     def test_step(self, batch, batch_idx):
