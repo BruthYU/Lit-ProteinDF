@@ -204,6 +204,7 @@ class TrainSampler(data.Sampler):
         self.epoch = 0
         self._sample_mode = sample_mode
         self.sampler_len = len(self._dataset_indices)
+        self.sample_list = None
 
         if self._sample_mode in ['cluster_length_batch', 'cluster_time_batch']:
             self._pdb_to_cluster = self._read_clusters()
@@ -238,11 +239,13 @@ class TrainSampler(data.Sampler):
             # Each batch contains multiple proteins of the same length.
             sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
                 self._batch_size, replace=True, random_state=self.epoch)
+            self.sample_list = sampled_order
             return iter(sampled_order['index'].tolist())
         elif self._sample_mode == 'time_batch':
             # Each batch contains multiple time steps of the same protein.
             random.shuffle(self._dataset_indices)
             repeated_indices = np.repeat(self._dataset_indices, self._batch_size)
+            self.sample_list = repeated_indices
             return iter(repeated_indices)
         elif self._sample_mode == 'cluster_length_batch':
             # Each batch contains multiple clusters of the same length.
@@ -250,6 +253,7 @@ class TrainSampler(data.Sampler):
                 1, random_state=self.epoch)
             sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
                 self._batch_size, replace=True, random_state=self.epoch)
+            self.sample_list = sampled_order
             return iter(sampled_order['index'].tolist())
         elif self._sample_mode == 'cluster_time_batch':
             # Each batch contains multiple time steps of a protein from a cluster.
@@ -257,6 +261,7 @@ class TrainSampler(data.Sampler):
                 1, random_state=self.epoch)
             dataset_indices = sampled_clusters['index'].tolist()
             repeated_indices = np.repeat(dataset_indices, self._batch_size)
+            self.sample_list = repeated_indices
             return iter(repeated_indices.tolist())
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
@@ -267,6 +272,123 @@ class TrainSampler(data.Sampler):
 
     def __len__(self):
         return self.sampler_len
+
+class NewDistributedTrainSampler(data.Sampler):
+    def __init__(self,
+                 *,
+                 data_conf,
+                 dataset,
+                 batch_size,
+                 sample_mode,
+                 num_replicas: Optional[int] = None,
+                 rank: Optional[int] = None, shuffle: bool = True,
+                 seed: int = 0, drop_last: bool = False) -> None:
+        if num_replicas is None:
+            if not dist.is_available():
+                raise RuntimeError("Requires distributed package to be available")
+            num_replicas = dist.get_world_size()
+        if rank is None:
+            if not dist.is_available():
+                raise RuntimeError("Requires distributed package to be available")
+            rank = dist.get_rank()
+        if rank >= num_replicas or rank < 0:
+            raise ValueError(
+                "Invalid rank {}, rank should be in the interval"
+                " [0, {}]".format(rank, num_replicas - 1))
+        self._data_conf = data_conf
+        self._dataset = dataset
+        self._batch_size = batch_size
+        self._sample_mode = sample_mode
+        self._data_csv = self._dataset.csv
+        self._dataset_indices = list(range(len(self._data_csv)))
+        self._data_csv['index'] = self._dataset_indices
+
+
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.epoch = 0
+        assert batch_size % num_replicas == 0, "Batch size must be divisible by num_gpus"
+
+
+        self.drop_last = drop_last
+        start_sample_list = self.get_sample_list()
+        # _repeated_size is the size of the dataset multiply by batch size
+        self._repeated_size = len(start_sample_list)
+        # If the dataset length is evenly divisible by # of replicas, then there
+        # is no need to drop any data, since the dataset will be split equally.
+        if self.drop_last and self._repeated_size % self.num_replicas != 0:  # type: ignore[arg-type]
+            # Split to nearest available length that is evenly divisible.
+            # This is to ensure each rank receives the same amount of data when
+            # using this Sampler.
+            self.num_samples = math.ceil(
+                (self._repeated_size - self.num_replicas) / self.num_replicas  # type: ignore[arg-type]
+            )
+        else:
+            self.num_samples = math.ceil(self._repeated_size / self.num_replicas)  # type: ignore[arg-type]
+        self.total_size = self.num_samples * self.num_replicas
+        self.shuffle = shuffle
+        self.seed = seed
+
+    def get_sample_list(self):
+        if self._sample_mode == 'length_batch':
+            # Each batch contains multiple proteins of the same length.
+            sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return sampled_order
+        elif self._sample_mode == 'time_batch':
+            # Each batch contains multiple time steps of the same protein.
+            random.shuffle(self._dataset_indices)
+            repeated_indices = np.repeat(self._dataset_indices, self._batch_size)
+            return repeated_indices
+        elif self._sample_mode == 'cluster_length_batch':
+            # Each batch contains multiple clusters of the same length.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=self.epoch)
+            sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return sampled_order
+        elif self._sample_mode == 'cluster_time_batch':
+            # Each batch contains multiple time steps of a protein from a cluster.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=self.epoch)
+            dataset_indices = sampled_clusters['index'].tolist()
+            repeated_indices = np.repeat(dataset_indices, self._batch_size)
+            return repeated_indices
+        else:
+            raise ValueError(f'Invalid sample mode: {self._sample_mode}')
+
+    def __iter__(self):
+        indices = self.get_sample_list()
+        if not self.drop_last:
+            # add extra samples to make it evenly divisible
+            padding_size = self.total_size - len(indices)
+            if padding_size <= len(indices):
+                indices = np.concatenate((indices, indices[:padding_size]), axis=0)
+            else:
+                indices = np.concatenate(
+                    (indices, np.repeat(indices, math.ceil(padding_size / len(indices)))[:padding_size]), axis=0)
+
+        else:
+            # remove tail of data to make it evenly divisible.
+            indices = indices[:self.total_size]
+        assert len(indices) == self.total_size
+
+        indices = indices[self.rank:self.total_size:self.num_replicas]
+        assert len(indices) == self.num_samples
+        return iter(indices)
+
+
+    def __len__(self) -> int:
+        return self.num_samples
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+
+
+
+
+
 
 
 
@@ -398,16 +520,6 @@ class DistributedTrainSampler(data.Sampler):
     def __len__(self) -> int:
         return self.num_samples
 
-    def add_epoch(self) -> None:
-        r"""
-        Sets the epoch for this sampler. When :attr:`shuffle=True`, this ensures all replicas
-        use a different random ordering for each epoch. Otherwise, the next iteration of this
-        sampler will yield the same ordering.
-
-        Args:
-            epoch (int): Epoch number.
-        """
-        self.epoch = self.epoch + 1
 
 
 

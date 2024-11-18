@@ -67,7 +67,7 @@ experiment:
 
   # Training arguments
   log_freq: 1000
-  batch_size: 2
+  batch_size: 32
   steps_per_epoch: null
   eval_batch_size: 1
   num_loader_workers: 5
@@ -92,7 +92,7 @@ experiment:
 
 
   # Wandb logging
-  use_wandb: True
+  use_wandb: False
 
   # How many steps to checkpoint between.
   ckpt_freq: 10000

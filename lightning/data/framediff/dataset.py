@@ -83,12 +83,13 @@ class framediff_Dataset(data.Dataset):
 
 
         # Split the dataset
-        if self.is_training:
-            result_tuples = result_tuples[:split_index]
-            self.csv = self.csv[:split_index]
-        else:
-            result_tuples = result_tuples[split_index:]
-            self.csv = self.csv[split_index:]
+        # if self.is_training:
+        #     result_tuples = result_tuples[:split_index]
+        #     self.csv = self.csv[:split_index]
+        # else:
+        #     result_tuples = result_tuples[split_index:]
+        #     self.csv = self.csv[split_index:]
+
 
 
 

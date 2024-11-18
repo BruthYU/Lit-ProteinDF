@@ -49,7 +49,7 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
         '''
         Distributed Sampler
         '''
-        train_sampler = self.dataloader.TrainSampler(
+        train_sampler = self.dataloader.NewDistributedTrainSampler(
             data_conf=self.data_conf,
             dataset=self.trainset,
             batch_size=self.exp_conf.batch_size,

@@ -1,6 +1,5 @@
 import datetime
 import os
-import sys
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import math
@@ -20,7 +19,9 @@ from model import MInterface
 from data import DInterface
 import logging
 import wandb
-
+import sys
+sys.path.append('..')
+print(sys.path)
 LOG = logging.getLogger(__name__)
 
 
@@ -90,7 +91,7 @@ def run(conf: DictConfig) -> None:
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),
-        # 'use_distributed_sampler': False,
+        'use_distributed_sampler': False,
         'logger': pl_logger
     }
 
