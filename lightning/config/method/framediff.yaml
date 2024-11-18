@@ -63,8 +63,7 @@ experiment:
   name: baseline
   run_id: null
 
-  #training mode
-  use_ddp : False
+
 
   # Training arguments
   log_freq: 1000
@@ -77,6 +76,7 @@ experiment:
   max_squared_res: 500000
   prefetch_factor: 100
   use_gpu: True
+  train_sample_mode: time_batch
   # num_gpus: 1
 
 
@@ -91,9 +91,9 @@ experiment:
 
 
 
-  # Wandb logging
-  wandb_dir: ./
-  use_wandb: False
+#  # Wandb logging
+#  wandb_dir: ./
+#  use_wandb: False
 
   # How many steps to checkpoint between.
   ckpt_freq: 10000

@@ -20,18 +20,18 @@ from model import MInterface
 from data import DInterface
 import logging
 import wandb
-wandb.login(key="7878871205533d1968d0e0736c7a47eb50d4ac69")
+
 LOG = logging.getLogger(__name__)
-wandb_logger = WandbLogger(project=f"Lit-ProteinDF", log_model='all')
+
 
 class MethodCallback(Callback):
     def __init__(self, method_name):
         super().__init__()
         self.method_name = method_name
 
-    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+    def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         if self.method_name in ['framediff', 'foldflow']:
-            trainer.train_dataloader.sampler.add_epoch()
+            trainer.train_dataloader.sampler.set_epoch(pl_module.current_epoch)
 
 
 def load_callbacks(conf):
@@ -57,6 +57,11 @@ def load_callbacks(conf):
 
 @hydra.main(version_base=None, config_path="config", config_name="train")
 def run(conf: DictConfig) -> None:
+    # Change wandb working dir to hydra chdir
+    os.environ["WANDB_DIR"] = os.path.abspath(os.getcwd())
+    wandb.login(key="7878871205533d1968d0e0736c7a47eb50d4ac69")
+    wandb_logger = WandbLogger(project=f"Lit-ProteinDF", log_model='all')
+
 
     pl.seed_everything(conf.experiment.seed)
     data_interface = DInterface(conf)
@@ -68,6 +73,9 @@ def run(conf: DictConfig) -> None:
                                                 / conf.experiment.batch_size / gpu_count)
     LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, "
              f"batch_size {conf.experiment.batch_size}")
+    print(os.getcwd())
+
+    #dir = os.getcwd(),
 
 
     trainer_config = {
@@ -80,7 +88,7 @@ def run(conf: DictConfig) -> None:
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),
-        'use_distributed_sampler': False,
+        # 'use_distributed_sampler': False,
         'logger': wandb_logger
     }
 

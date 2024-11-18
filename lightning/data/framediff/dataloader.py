@@ -179,7 +179,7 @@ def create_data_loader(
         )
 
 
-class BaseSampler(data.Sampler):
+class TrainSampler(data.Sampler):
 
     def __init__(
             self,
@@ -192,6 +192,7 @@ class BaseSampler(data.Sampler):
         if not dist.is_available():
             raise RuntimeError("Requires distributed package to be available")
         self.num_replicas = dist.get_world_size()
+        assert batch_size % self.num_replicas == 0, "Batch size must be divisible by num_gpus"
 
         self._log = logging.getLogger(__name__)
         self._data_conf = data_conf
@@ -260,8 +261,8 @@ class BaseSampler(data.Sampler):
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
 
-    def add_epoch(self):
-        self.epoch = self.epoch + 1
+    def set_epoch(self, epoch):
+        self.epoch = epoch
 
 
     def __len__(self):
