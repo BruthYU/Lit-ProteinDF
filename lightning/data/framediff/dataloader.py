@@ -268,12 +268,10 @@ class TrainSampler(data.Sampler):
 
     def set_epoch(self, epoch):
         self.epoch = epoch
-
-
     def __len__(self):
         return self.sampler_len
 
-class NewDistributedTrainSampler(data.Sampler):
+class NewDistributedSampler(data.Sampler):
     def __init__(self,
                  *,
                  data_conf,
@@ -282,7 +280,7 @@ class NewDistributedTrainSampler(data.Sampler):
                  sample_mode,
                  num_replicas: Optional[int] = None,
                  rank: Optional[int] = None, shuffle: bool = True,
-                 seed: int = 0, drop_last: bool = False) -> None:
+                 seed: int = 0, drop_last: bool = False, is_training: bool = True) -> None:
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError("Requires distributed package to be available")
@@ -383,12 +381,6 @@ class NewDistributedTrainSampler(data.Sampler):
 
     def set_epoch(self, epoch):
         self.epoch = epoch
-
-
-
-
-
-
 
 
 

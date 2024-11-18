@@ -33,7 +33,7 @@ class framediff_Lightning_Model(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, **kwargs):
         batch_size = batch['aatype'].shape[0]
-        LOG.info(f'Local Rank: {dist.get_rank()}| Batch Size:{batch_size}')
+        # LOG.info(f'Local Rank: {dist.get_rank()}| Batch Size:{batch_size}')
 
         loss, aux_data = self.loss_fn(batch)
         # self.log("global_step", self.global_step, on_step=True, on_epoch=True, prog_bar=True)
