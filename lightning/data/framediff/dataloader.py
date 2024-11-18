@@ -297,7 +297,7 @@ class NewDistributedSampler(data.Sampler):
         self._dataset = dataset
         self._batch_size = batch_size
         self._sample_mode = sample_mode
-        self._data_csv = self._dataset.csv
+        self._data_csv = self._dataset.lmdb_cache.csv
         self._dataset_indices = list(range(len(self._data_csv)))
         self._data_csv['index'] = self._dataset_indices
 
