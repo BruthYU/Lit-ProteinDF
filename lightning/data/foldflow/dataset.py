@@ -20,9 +20,43 @@ from scipy.spatial.transform import Rotation
 from lightning.data.foldflow.so3_helpers import so3_relative_angle
 import lightning.data.foldflow.se3_fm as se3_fm
 
+class LMDB_Cache:
+    def __init__(self, data_conf):
+        self.local_cache = None
+        self.csv = None
+        self.cache_dir = data_conf.cache_dir
+        self.cache_to_memory()
+
+    def cache_to_memory(self):
+        print(f"Loading cache from local dataset @ {self.cache_dir}")
+        csv_path = os.path.join(self.cache_dir,"filtered_protein.csv")
+        self.csv = pd.read_csv(csv_path)
+        self.local_cache = lmdb.open(self.cache_dir)
+        result_tuples = []
+        with self.local_cache.begin() as txn:
+            for _, value in txn.cursor():
+                result_tuples.append(pickle.loads(value))
+
+        assert len(result_tuples) == len(self.csv)
+        def _get_list(idx):
+            return list(map(lambda x: x[idx], result_tuples))
+        self.chain_ftrs = _get_list(0)
+        self.gt_bb_rigid_vals = _get_list(1)
+        self.pdb_names = _get_list(2)
+        self.csv_rows = _get_list(3)
+        pass
+
+    def get_cache_csv_row(self, idx):
+        return (
+            self.chain_ftrs[idx],
+            self.gt_bb_rigid_vals[idx],
+            self.pdb_names[idx],
+            self.csv_rows[idx],
+        )
 
 class foldflow_Dataset(data.Dataset):
     def __init__(self,
+                 lmdb_cache,
                  data_conf = None,
                  fm_conf = None,
                  is_training= True,
@@ -32,15 +66,16 @@ class foldflow_Dataset(data.Dataset):
                  max_same_res = 10
                  ):
         super().__init__()
+        assert lmdb_cache, "No cache to build dataset."
+        self.lmdb_cache = lmdb_cache
+        self.csv = self.lmdb_cache.csv
         self.data_conf = data_conf
         self.fm_conf = fm_conf
         self.is_training = is_training
 
 
-        self.cache_dir = self.data_conf.cache_dir
-        self.local_cache = None
-        self.csv = None
-        self.cache_to_memory()
+
+
 
         # Could be Diffusion, CFM, OT-CFM or SF2M
         self.gen_model = se3_fm.SE3FlowMatcher(self.fm_conf)
@@ -81,7 +116,7 @@ class foldflow_Dataset(data.Dataset):
         else:
             rng = np.random.default_rng(idx)
 
-        chain_feats, gt_bb_rigid, pdb_name, csv_row = self.get_cache_csv_row(idx)
+        chain_feats, gt_bb_rigid, pdb_name, csv_row = self.lmdb_cache.get_cache_csv_row(idx)
 
         if self.is_training and not self.is_OT:
             # Sample t and flow.
@@ -110,7 +145,7 @@ class foldflow_Dataset(data.Dataset):
 
                 # get the features, transform them to Rigid, and extract their translation and rotation.
                 list_feat = [
-                    self.get_cache_csv_row(i, sample_subset)[0] for i in range(n_samples)
+                    self.lmdb_cache.get_cache_csv_row(i, sample_subset)[0] for i in range(n_samples)
                 ]
                 list_trans_rot = [
                     extract_trans_rots_mat(
@@ -202,49 +237,4 @@ class foldflow_Dataset(data.Dataset):
 
 
 
-    def cache_to_memory(self):
-        print(f"Loading cache from local dataset @ {self.cache_dir}")
-        csv_path = os.path.join(self.cache_dir,"filtered_protein.csv")
-        self.csv = pd.read_csv(csv_path)
-
-
-
-        self.local_cache = lmdb.open(self.cache_dir)
-        result_tuples = []
-        with self.local_cache.begin() as txn:
-            for _, value in txn.cursor():
-                result_tuples.append(pickle.loads(value))
-
-        split_index = math.floor(len(self.csv) * (1 - self.data_conf.split_ratio))
-
-
-        # Split the dataset
-        if self.is_training:
-            result_tuples = result_tuples[:split_index]
-            self.csv = self.csv[:split_index]
-        else:
-            result_tuples = result_tuples[split_index:]
-            self.csv = self.csv[split_index:]
-
-
-
-        assert len(result_tuples) == len(self.csv)
-        def _get_list(idx):
-            return list(map(lambda x: x[idx], result_tuples))
-        self.chain_ftrs = _get_list(0)
-        self.gt_bb_rigid_vals = _get_list(1)
-        self.pdb_names = _get_list(2)
-        self.csv_rows = _get_list(3)
-        pass
-
-    def get_cache_csv_row(self, idx, csv = None):
-        if csv is not None:
-            # We are going to get the idx row out of the csv -> so we look for true index based on index cl
-            idx = csv.iloc[idx]["index"]
-        return (
-            self.chain_ftrs[idx],
-            self.gt_bb_rigid_vals[idx],
-            self.pdb_names[idx],
-            self.csv_rows[idx],
-        )
 
