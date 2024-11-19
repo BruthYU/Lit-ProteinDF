@@ -18,7 +18,7 @@ from Bio import PDB
 from Bio.PDB.Chain import Chain
 import dataclasses
 from preprocess.tools.protein import Protein
-
+import logging
 # Global map from chain characters to integers.
 ALPHANUMERIC = string.ascii_letters + string.digits + " "
 CHAIN_TO_INT = {chain_char: i for i, chain_char in enumerate(ALPHANUMERIC)}
@@ -240,7 +240,144 @@ def create_data_loader(
         else None,  # TODO Try without. Doesn't seem to matter
     )
 
+class TrainSampler(data.Sampler):
+    def __init__(
+        self,
+        *,
+        data_conf,
+        dataset,
+        batch_size,
+        sample_mode,
+        max_squared_res,
+        num_gpus,
+    ):
+        self._log = logging.getLogger(__name__)
+        self._data_conf = data_conf
+        self._dataset = dataset
+        self._data_csv = self._dataset.csv
+        self._dataset_indices = list(range(len(self._data_csv)))
+        self._data_csv["index"] = self._dataset_indices
+        self._batch_size = batch_size
+        self.epoch = 0
+        self._sample_mode = sample_mode
+        self._max_squared_res = max_squared_res
+        self.sampler_len = len(self._dataset_indices) * self._batch_size
+        self._num_gpus = num_gpus
 
+        if self._sample_mode in [
+            "cluster_length_batch",
+            "cluster_time_batch",
+            "cluster_time_batch_v2",
+        ]:
+            self._pdb_to_cluster = self._read_clusters()
+            self._max_cluster = max(self._pdb_to_cluster.values())
+            self._log.info(f"Read {self._max_cluster} clusters.")
+            self._missing_pdbs = 0
+
+            def cluster_lookup(pdb):
+                pdb = pdb.upper()
+                if pdb not in self._pdb_to_cluster:
+                    self._pdb_to_cluster[pdb] = self._max_cluster + 1
+                    self._max_cluster += 1
+                    self._missing_pdbs += 1
+                return self._pdb_to_cluster[pdb]
+
+            self._data_csv["cluster"] = self._data_csv["pdb_name"].map(cluster_lookup)
+            num_clusters = len(set(self._data_csv["cluster"]))
+            self.sampler_len = num_clusters * self._batch_size
+            self._log.info(
+                f"Training on {num_clusters} clusters. PDBs without clusters: {self._missing_pdbs}"
+            )
+
+            # TODO Make sure seq len is modeled_seq_len
+            self._data_csv["max_batch_examples"] = self._data_csv[
+                "modeled_seq_len"
+            ].apply(lambda x: max(int(max_squared_res // x**2), 1))
+            self._data_csv_group_clusters = self._data_csv.groupby("cluster")
+
+        # We are assuming we are indexing based on relative position in the csv (with pandas iloc)
+        assert np.all(
+            self._data_csv["index"].values == np.arange(len(self._data_csv))
+        ), "CSV is not sorted by index."
+
+        # breakpoint()
+
+    def _read_clusters(self):
+        pdb_to_cluster = {}
+        with open(self._data_conf.cluster_path, "r") as f:
+            for i, line in enumerate(f):
+                for chain in line.split(" "):
+                    pdb = chain.split("_")[0]
+                    pdb_to_cluster[pdb.upper()] = i
+        return pdb_to_cluster
+
+    def __iter__(self):
+        # print(f"[DEBUG] Train sample")
+
+        if self._sample_mode == "length_batch":
+            # Each batch contains multiple proteins of the same length.
+            sampled_order = self._data_csv.groupby("modeled_seq_len").sample(
+                self._batch_size, replace=True, random_state=self.epoch
+            )
+            return iter(sampled_order["index"].tolist())
+        elif self._sample_mode == "time_batch":
+            # Each batch contains multiple time steps of the same protein.
+            random.shuffle(self._dataset_indices)
+            repeated_indices = np.repeat(self._dataset_indices, self._batch_size)
+            return iter(repeated_indices)
+        elif self._sample_mode == "cluster_length_batch":
+            # Each batch contains multiple clusters of the same length.
+            sampled_clusters = self._data_csv_group_clusters.sample(
+                1, random_state=self.epoch
+            )
+            sampled_order = sampled_clusters.groupby("modeled_seq_len").sample(
+                self._batch_size, replace=True, random_state=self.epoch
+            )
+            return iter(sampled_order["index"].tolist())
+        elif self._sample_mode == "cluster_time_batch":
+            # Each batch contains multiple time steps of a protein from a cluster.
+            sampled_clusters = self._data_csv_group_clusters.sample(
+                1, random_state=self.epoch
+            )
+            dataset_indices = sampled_clusters["index"].tolist()
+            repeated_indices = np.repeat(dataset_indices, self._batch_size)
+            return iter(repeated_indices.tolist())
+        elif self._sample_mode == "cluster_time_batch_v2":
+            # Each batch contains multiple time steps of a protein from a cluster.
+            sampled_clusters = self._data_csv_group_clusters.sample(
+                1, random_state=self.epoch
+            )
+            dataset_indices = sampled_clusters["index"].tolist()
+            max_per_batch = sampled_clusters["max_batch_examples"].tolist()
+
+            # Repeat each index to max batch size and pad until self._batch_size with None as indexes
+            repeated_indices = []
+            assert (
+                self._batch_size % self._num_gpus == 0
+            ), "Batch size must be divisible by num_gpus"
+
+            # num_gpus = self._batch_size
+            # setup_dataloaders(train_loader, use_distributed_sampler=False) Fixes actual batch
+            # So we don't need this
+            num_gpus = 1
+            batch_size = self._batch_size // num_gpus
+
+            for ix in range(num_gpus):
+                for idx, count in zip(dataset_indices, max_per_batch):
+                    # count = max(1, count // self._num_gpus)
+                    # Repeat the index based on its count
+                    repeated_indices += [idx] * min(count, batch_size)
+                    repeated_indices += [None] * max(0, batch_size - count)
+
+            return iter(repeated_indices)
+        else:
+            raise ValueError(f"Invalid sample mode: {self._sample_mode}")
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __len__(self):
+        return self.sampler_len
 class OldDistributedTrainSampler(data.Sampler):
     r"""Sampler that restricts data loading to a subset of the dataset.
 

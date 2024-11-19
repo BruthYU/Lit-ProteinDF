@@ -71,12 +71,7 @@ class framediff_Sampler:
         self.lightning_model.model = model
         self.inference_ready = True
 
-    def set_t_feats(self, feats, t, t_placeholder):
-        feats['t'] = t * t_placeholder
-        rot_score_scaling, trans_score_scaling = self.lightning_model.diffuser.score_scaling(t)
-        feats['rot_score_scaling'] = rot_score_scaling * t_placeholder
-        feats['trans_score_scaling'] = trans_score_scaling * t_placeholder
-        return feats
+
 
 
 

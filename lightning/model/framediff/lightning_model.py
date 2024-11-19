@@ -7,14 +7,18 @@ import pytorch_lightning as pl
 import os
 import torch.nn as nn
 import ipdb
+import tree
 from lightning.model.framediff import score_network
 from lightning.data.framediff import se3_diffuser
+from .analysis import metrics
+from .analysis import utils as au
 from evaluate.openfold.utils import rigid_utils as ru
 from preprocess.tools import utils as du
 from preprocess.tools import all_atom
 import numpy as np
 import copy
 import logging
+import pandas as pd
 import torch.distributed as dist
 LOG = logging.getLogger(__name__)
 class framediff_Lightning_Model(pl.LightningModule):
@@ -23,9 +27,11 @@ class framediff_Lightning_Model(pl.LightningModule):
         self.save_hyperparameters()
         self.model_conf = conf.model
         self.frame_conf = conf.frame
+        self.data_conf = conf.dataset
         self.exp_conf = conf.experiment
         self.diffuser = se3_diffuser.SE3Diffuser(self.frame_conf)
         self.model = score_network.ScoreNetwork(self.model_conf, self.diffuser)
+        self.validation_step_outputs = []
 
     def forward(self, batch, cond):
         model_out = self.model(batch)
@@ -49,12 +55,28 @@ class framediff_Lightning_Model(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, aux_data = self.loss_fn(batch)
-        self.log('val_loss', loss)
-        return loss
+        eval_fn_output = self.eval_fn(batch, batch_idx, noise_scale=self.exp_conf.noise_scale)
+        self.validation_step_outputs.append(eval_fn_output)
 
-    def test_step(self, batch, batch_idx):
-        return self.validation_step(batch, batch_idx)
+
+    # def validation_epoch_end(self, validation_step_outputs) -> None:
+    #     ckpt_eval_metrics = []
+    #     for batch_eval_metrics in validation_step_outputs:
+    #         ckpt_eval_metrics.extend(batch_eval_metrics)
+    #     eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, "metrics.csv")
+    #     ckpt_eval_metrics = pd.DataFrame(ckpt_eval_metrics)
+    #     ckpt_eval_metrics.to_csv(eval_metrics_csv_path, index=False)
+
+    def on_validation_epoch_end(self) -> None:
+        ckpt_eval_metrics = []
+        for batch_eval_metrics in self.validation_step_outputs:
+            ckpt_eval_metrics.extend(batch_eval_metrics)
+        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, "metrics.csv")
+        ckpt_eval_metrics = pd.DataFrame(ckpt_eval_metrics)
+        ckpt_eval_metrics.to_csv(eval_metrics_csv_path, index=False)
+
+    # def test_step(self, batch, batch_idx):
+    #     return self.validation_step(batch, batch_idx)
 
     def get_schedular(self, optimizer, lr_scheduler='onecycle'):
         if lr_scheduler == 'step':
@@ -101,6 +123,69 @@ class framediff_Lightning_Model(pl.LightningModule):
         model_sc = self.model(batch)
         batch['sc_ca_t'] = model_sc['rigids'][..., 4:]
         return batch
+
+    def eval_fn(self,
+                batch,
+                batch_idx,
+                min_t=None,
+                num_t=None,
+                noise_scale=1.0,
+                ):
+        ckpt_eval_metrics = []
+        valid_feats = batch
+        res_mask = du.move_to_np(valid_feats['res_mask'].bool())
+        fixed_mask = du.move_to_np(valid_feats['fixed_mask'].bool())
+        aatype = du.move_to_np(valid_feats['aatype'])
+        gt_prot = du.move_to_np(valid_feats['atom37_pos'])
+        lmdbIndex = du.move_to_np(valid_feats['lmdb_idx'])
+        batch_size = res_mask.shape[0]
+
+
+        # Run inference
+        infer_out = self.inference_fn(valid_feats, min_t=min_t, num_t=num_t, noise_scale=noise_scale)
+        final_prot = infer_out['prot_traj'][0]
+        for i in range(batch_size):
+            num_res = int(np.sum(res_mask[i]).item())
+            unpad_fixed_mask = fixed_mask[i][res_mask[i]]
+            unpad_diffused_mask = 1 - unpad_fixed_mask
+            unpad_prot = final_prot[i][res_mask[i]]
+            unpad_gt_prot = gt_prot[i][res_mask[i]]
+            unpad_gt_aatype = aatype[i][res_mask[i]]
+            percent_diffused = np.sum(unpad_diffused_mask) / num_res
+
+            # Extract argmax predicted aatype
+            saved_path = au.write_prot_to_pdb(
+                unpad_prot,
+                os.path.join(
+                    self.exp_conf.eval_dir,
+                    f'len_{num_res}_lmdbIndex_{lmdbIndex[i]}_diffused_{percent_diffused:.2f}.pdb'
+                ),
+                no_indexing=True,
+                b_factors=np.tile(1 - unpad_fixed_mask[..., None], 37) * 100
+            )
+            try:
+                sample_metrics = metrics.protein_metrics(
+                    pdb_path=saved_path,
+                    atom37_pos=unpad_prot,
+                    gt_atom37_pos=unpad_gt_prot,
+                    gt_aatype=unpad_gt_aatype,
+                    diffuse_mask=unpad_diffused_mask,
+                )
+            except ValueError as e:
+                self._log.warning(
+                    f'Failed evaluation of length {num_res} sample {i}: {e}')
+                continue
+            sample_metrics['step'] = self.trained_steps
+            sample_metrics['num_res'] = num_res
+            sample_metrics['fixed_residues'] = np.sum(unpad_fixed_mask)
+            sample_metrics['diffused_percentage'] = percent_diffused
+            sample_metrics['sample_path'] = saved_path
+            ckpt_eval_metrics.append(sample_metrics)
+
+        return ckpt_eval_metrics
+
+
+
 
     def loss_fn(self, batch):
         """Computes loss and auxiliary data.
@@ -265,6 +350,15 @@ class framediff_Lightning_Model(pl.LightningModule):
         assert final_loss.shape == (batch_size,)
         assert batch_loss_mask.shape == (batch_size,)
         return normalize_loss(final_loss), aux_data
+
+    def set_t_feats(self, feats, t, t_placeholder):
+        feats['t'] = t * t_placeholder
+        rot_score_scaling, trans_score_scaling = self.diffuser.score_scaling(t)
+        feats['rot_score_scaling'] = rot_score_scaling * t_placeholder
+        feats['trans_score_scaling'] = trans_score_scaling * t_placeholder
+        return feats
+
+
 
     def inference_fn(
             self,

@@ -67,22 +67,29 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
             length_batch=True,
             batch_size=self.exp_conf.batch_size // train_sampler.num_replicas,
             shuffle=False,
-            num_workers=num_workers,
+            num_workers=1,
             drop_last=False,
             max_squared_res=self.exp_conf.max_squared_res,
         )
         return train_loader
 
     def val_dataloader(self):
-        valid_sampler = None
+        num_workers = self.exp_conf.num_loader_workers
+        valid_sampler = self.dataloader.NewDistributedSampler(
+            data_conf=self.data_conf,
+            dataset=self.valset,
+            batch_size=self.data_conf.samples_per_eval_length,
+            sample_mode=self.exp_conf.train_sample_mode,
+            is_training=False
+        )
         valid_loader = self.dataloader.create_data_loader(
             self.valset,
             sampler=valid_sampler,
             np_collate=False,
             length_batch=False,
-            batch_size=self.exp_conf.eval_batch_size,
+            batch_size=self.data_conf.samples_per_eval_length // valid_sampler.num_replicas,
             shuffle=False,
-            num_workers=1,
+            num_workers=num_workers,
             drop_last=False,
         )
         return valid_loader

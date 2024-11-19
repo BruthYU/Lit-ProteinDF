@@ -106,6 +106,7 @@ def pad(x: np.ndarray, max_len: int, pad_idx=0, use_torch=False, reverse=False):
 # also keep track of insertions
 
 
+
 def concat_np_features(
         np_dicts: List[Dict[str, np.ndarray]], add_batch_dim: bool):
     """Performs a nested concatenation of feature dicts.
@@ -279,7 +280,7 @@ class NewDistributedSampler(data.Sampler):
                  batch_size,
                  sample_mode,
                  num_replicas: Optional[int] = None,
-                 rank: Optional[int] = None, shuffle: bool = True,
+                 rank: Optional[int] = None,
                  seed: int = 0, drop_last: bool = False, is_training: bool = True) -> None:
         if num_replicas is None:
             if not dist.is_available():
@@ -297,9 +298,10 @@ class NewDistributedSampler(data.Sampler):
         self._dataset = dataset
         self._batch_size = batch_size
         self._sample_mode = sample_mode
-        self._data_csv = self._dataset.lmdb_cache.csv
+        self._data_csv = self._dataset.csv
         self._dataset_indices = list(range(len(self._data_csv)))
         self._data_csv['index'] = self._dataset_indices
+        self._is_training = is_training
 
 
         self.num_replicas = num_replicas
@@ -309,7 +311,10 @@ class NewDistributedSampler(data.Sampler):
 
 
         self.drop_last = drop_last
-        start_sample_list = self.get_sample_list()
+        if self._is_training:
+            start_sample_list = self.get_train_sample_list()
+        else:
+            start_sample_list = self.get_eval_sample_list()
         # _repeated_size is the size of the dataset multiply by batch size
         self._repeated_size = len(start_sample_list)
         # If the dataset length is evenly divisible by # of replicas, then there
@@ -324,15 +329,14 @@ class NewDistributedSampler(data.Sampler):
         else:
             self.num_samples = math.ceil(self._repeated_size / self.num_replicas)  # type: ignore[arg-type]
         self.total_size = self.num_samples * self.num_replicas
-        self.shuffle = shuffle
         self.seed = seed
 
-    def get_sample_list(self):
+    def get_train_sample_list(self):
         if self._sample_mode == 'length_batch':
             # Each batch contains multiple proteins of the same length.
             sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
                 self._batch_size, replace=True, random_state=self.epoch)
-            return sampled_order
+            return sampled_order['index'].tolist()
         elif self._sample_mode == 'time_batch':
             # Each batch contains multiple time steps of the same protein.
             random.shuffle(self._dataset_indices)
@@ -344,7 +348,7 @@ class NewDistributedSampler(data.Sampler):
                 1, random_state=self.epoch)
             sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
                 self._batch_size, replace=True, random_state=self.epoch)
-            return sampled_order
+            return sampled_order['index'].tolist()
         elif self._sample_mode == 'cluster_time_batch':
             # Each batch contains multiple time steps of a protein from a cluster.
             sampled_clusters = self._data_csv.groupby('cluster').sample(
@@ -355,12 +359,34 @@ class NewDistributedSampler(data.Sampler):
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
 
+    def get_eval_sample_list(self):
+        '''
+        eval_num = num_eval_lengths * self._batch_size
+        '''
+        all_lengths = np.sort(self._data_csv.modeled_seq_len.unique())
+        length_indices = (len(all_lengths) - 1) * np.linspace(
+            0.0, 1.0, self._data_conf.num_eval_lengths)
+        length_indices = length_indices.astype(int)
+        eval_lengths = all_lengths[length_indices]
+        eval_csv = self._data_csv[self._data_csv.modeled_seq_len.isin(eval_lengths)]
+        # Fix a random seed to get the same split each time.
+        eval_csv = eval_csv.groupby('modeled_seq_len').sample(
+            self._batch_size, replace=True, random_state=self.epoch)
+        eval_csv = eval_csv.sort_values('modeled_seq_len', ascending=False)
+        return eval_csv['index'].tolist()
+
+
     def __iter__(self):
-        indices = self.get_sample_list()
+        if self._is_training:
+            indices = self.get_train_sample_list()
+        else:
+            indices = self.get_eval_sample_list()
         if not self.drop_last:
             # add extra samples to make it evenly divisible
             padding_size = self.total_size - len(indices)
-            if padding_size <= len(indices):
+            if padding_size == 0:
+                pass
+            elif padding_size <= len(indices):
                 indices = np.concatenate((indices, indices[:padding_size]), axis=0)
             else:
                 indices = np.concatenate(

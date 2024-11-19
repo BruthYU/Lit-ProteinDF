@@ -73,10 +73,6 @@ class foldflow_Dataset(data.Dataset):
         self.fm_conf = fm_conf
         self.is_training = is_training
 
-
-
-
-
         # Could be Diffusion, CFM, OT-CFM or SF2M
         self.gen_model = se3_fm.SE3FlowMatcher(self.fm_conf)
         self.is_OT = is_OT
