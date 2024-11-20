@@ -57,6 +57,7 @@ class framediff_Lightning_Model(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         eval_fn_output = self.eval_fn(batch, batch_idx, noise_scale=self.exp_conf.noise_scale)
+        self.log("tm_score", np.mean([x['tm_score'] for x in eval_fn_output]), on_epoch=True, prog_bar=True)
         self.validation_step_outputs.append(eval_fn_output)
 
 

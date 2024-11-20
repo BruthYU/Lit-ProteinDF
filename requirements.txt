@@ -9,3 +9,7 @@ biopython==1.80
 pandas==1.5.2
 ipdb==0.13.11
 ml_collections==0.1.1
+mdtraj==1.9.7
+openmm==8.1.1
+git+https://github.com/openmm/pdbfixer.git@v1.8.1
+tmtools==0.0.2
