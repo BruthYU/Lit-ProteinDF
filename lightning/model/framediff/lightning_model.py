@@ -154,7 +154,7 @@ class framediff_Lightning_Model(pl.LightningModule):
                 os.path.join(
                     self.exp_conf.eval_dir,
                     f'epoch_{self.current_epoch}',
-                    f'lmdbIndex_{lmdbIndex[i]}_len_{num_res}_diffused_{percent_diffused:.2f}.pdb'
+                    f'Rank{self.local_rank}_B{batch_idx}S{i}_lmdbIndex_{lmdbIndex[i]}_len_{num_res}.pdb'
                 ),
                 b_factors=np.tile(1 - unpad_fixed_mask[..., None], 37) * 100
             )
@@ -170,6 +170,7 @@ class framediff_Lightning_Model(pl.LightningModule):
                 self._log.warning(
                     f'Failed evaluation of length {num_res} sample {i}: {e}')
                 continue
+            sample_metrics['lmdb_csv_Index'] = lmdbIndex[i]
             sample_metrics['num_res'] = num_res
             sample_metrics['fixed_residues'] = np.sum(unpad_fixed_mask)
             sample_metrics['diffused_percentage'] = percent_diffused
