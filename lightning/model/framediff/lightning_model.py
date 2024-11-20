@@ -67,9 +67,10 @@ class framediff_Lightning_Model(pl.LightningModule):
         ckpt_eval_metrics = []
         for batch_eval_metrics in self.validation_step_outputs:
             ckpt_eval_metrics.extend(batch_eval_metrics)
-        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, f'epoch_{self.current_epoch}', f"validation_epoch_{self.current_epoch}_metrics.csv")
+        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, f'epoch_{self.current_epoch}', f"validation_rank_{self.local_rank}_metrics.csv")
         ckpt_eval_metrics = pd.DataFrame(ckpt_eval_metrics)
         ckpt_eval_metrics.to_csv(eval_metrics_csv_path, index=False)
+        self.validation_step_outputs.clear()
 
 
 
