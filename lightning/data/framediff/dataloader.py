@@ -36,7 +36,7 @@ CHAIN_FEATS = [
     'atom_positions', 'aatype', 'atom_mask', 'residue_index', 'b_factors'
 ]
 UNPADDED_FEATS = [
-    't', 'rot_score_scaling', 'trans_score_scaling', 't_seq', 't_struct'
+    't', 'rot_score_scaling', 'trans_score_scaling', 't_seq', 't_struct', 'lmdbIndex'
 ]
 RIGID_FEATS = [
     'rigids_0', 'rigids_t'

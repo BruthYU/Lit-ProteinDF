@@ -105,7 +105,7 @@ class framediff_Dataset(data.Dataset):
         chain_feats['t'] = t
 
         chain_feats = du.pad_feats(chain_feats, csv_row['modeled_seq_len'])
-        chain_feats['lmdb_idx'] = idx
+        chain_feats['lmdbIndex'] = idx
         # Convert all features to tensors.
         final_feats = tree.map_structure(
             lambda x: x if torch.is_tensor(x) else torch.tensor(x), chain_feats)

@@ -18,6 +18,7 @@ from preprocess.tools import all_atom
 import numpy as np
 import copy
 import logging
+import math
 import pandas as pd
 import torch.distributed as dist
 LOG = logging.getLogger(__name__)
@@ -59,24 +60,17 @@ class framediff_Lightning_Model(pl.LightningModule):
         self.validation_step_outputs.append(eval_fn_output)
 
 
-    # def validation_epoch_end(self, validation_step_outputs) -> None:
-    #     ckpt_eval_metrics = []
-    #     for batch_eval_metrics in validation_step_outputs:
-    #         ckpt_eval_metrics.extend(batch_eval_metrics)
-    #     eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, "metrics.csv")
-    #     ckpt_eval_metrics = pd.DataFrame(ckpt_eval_metrics)
-    #     ckpt_eval_metrics.to_csv(eval_metrics_csv_path, index=False)
+
 
     def on_validation_epoch_end(self) -> None:
         ckpt_eval_metrics = []
         for batch_eval_metrics in self.validation_step_outputs:
             ckpt_eval_metrics.extend(batch_eval_metrics)
-        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, "metrics.csv")
+        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, f'epoch_{self.current_epoch}', f"validation_epoch_{self.current_epoch}_metrics.csv")
         ckpt_eval_metrics = pd.DataFrame(ckpt_eval_metrics)
         ckpt_eval_metrics.to_csv(eval_metrics_csv_path, index=False)
 
-    # def test_step(self, batch, batch_idx):
-    #     return self.validation_step(batch, batch_idx)
+
 
     def get_schedular(self, optimizer, lr_scheduler='onecycle'):
         if lr_scheduler == 'step':
@@ -137,7 +131,7 @@ class framediff_Lightning_Model(pl.LightningModule):
         fixed_mask = du.move_to_np(valid_feats['fixed_mask'].bool())
         aatype = du.move_to_np(valid_feats['aatype'])
         gt_prot = du.move_to_np(valid_feats['atom37_pos'])
-        lmdbIndex = du.move_to_np(valid_feats['lmdb_idx'])
+        lmdbIndex = du.move_to_np(valid_feats['lmdbIndex'])
         batch_size = res_mask.shape[0]
 
 
@@ -158,9 +152,9 @@ class framediff_Lightning_Model(pl.LightningModule):
                 unpad_prot,
                 os.path.join(
                     self.exp_conf.eval_dir,
-                    f'len_{num_res}_lmdbIndex_{lmdbIndex[i]}_diffused_{percent_diffused:.2f}.pdb'
+                    f'epoch_{self.current_epoch}',
+                    f'lmdbIndex_{lmdbIndex[i]}_len_{num_res}_diffused_{percent_diffused:.2f}.pdb'
                 ),
-                no_indexing=True,
                 b_factors=np.tile(1 - unpad_fixed_mask[..., None], 37) * 100
             )
             try:
@@ -175,7 +169,6 @@ class framediff_Lightning_Model(pl.LightningModule):
                 self._log.warning(
                     f'Failed evaluation of length {num_res} sample {i}: {e}')
                 continue
-            sample_metrics['step'] = self.trained_steps
             sample_metrics['num_res'] = num_res
             sample_metrics['fixed_residues'] = np.sum(unpad_fixed_mask)
             sample_metrics['diffused_percentage'] = percent_diffused

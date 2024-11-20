@@ -9,7 +9,7 @@ dataset:
   num_t: 100
   split_ratio: 0.1
   samples_per_eval_length: 4
-  num_eval_lengths: 10
+  num_eval_lengths: 4
 
 
 
