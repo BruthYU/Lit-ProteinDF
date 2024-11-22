@@ -91,8 +91,15 @@ experiment:
   num_loader_workers: 12
   torch_num_threads: 8
   num_epoch: 500
+
+
+  # Optimizer and Scheduler
   learning_rate: 0.0001
-  lr_scheduler: False
+  lr_scheduler: step
+  lr_decay_steps: 10_0000
+  lr_decay_min_lr: 0.00008
+  lr_decay_rate: 0.95
+
   max_squared_res: 500000
   prefetch_factor: 100
   use_gpu: True

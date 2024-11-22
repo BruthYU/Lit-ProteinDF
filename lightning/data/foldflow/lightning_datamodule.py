@@ -74,6 +74,7 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
         return train_loader
 
     def val_dataloader(self):
+        num_workers = self.exp_conf.num_loader_workers
         valid_sampler = self.dataloader.NewDistributedSampler(
             data_conf=self.data_conf,
             dataset=self.valset,
@@ -88,7 +89,7 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
             length_batch=False,
             batch_size=self.exp_conf.eval_batch_size,
             shuffle=False,
-            num_workers=0,
+            num_workers=num_workers,
             drop_last=False,
         )
         return valid_loader

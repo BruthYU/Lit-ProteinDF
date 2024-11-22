@@ -231,7 +231,7 @@ class foldflow_Dataset(data.Dataset):
             lambda x: x if torch.is_tensor(x) else torch.tensor(x), chain_feats
         )
         final_feats = du.pad_feats(final_feats, csv_row["modeled_seq_len"])
-        chain_feats['lmdbIndex'] = idx
+        final_feats['lmdbIndex'] = idx
         return final_feats
 
 

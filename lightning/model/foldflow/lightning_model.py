@@ -111,7 +111,7 @@ class foldflow_Lightning_Model(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.exp_conf.learning_rate)
-        schedular = None
+        schedular = self.get_schedular(optimizer, self.exp_conf.lr_scheduler)
         return [optimizer], [{"scheduler": schedular, "interval": "step"}]
 
     def lr_scheduler_step(self, *args, **kwargs):
@@ -386,6 +386,16 @@ class foldflow_Lightning_Model(pl.LightningModule):
             batch_eval_metrics.append(sample_metrics)
 
         return batch_eval_metrics
+
+    def set_t_feats(self, feats, t, t_placeholder):
+        feats["t"] = t * t_placeholder
+        (
+            rot_vectorfield_scaling,
+            trans_vectorfield_scaling,
+        ) = self.flow_matcher.vectorfield_scaling(t)
+        feats["rot_vectorfield_scaling"] = rot_vectorfield_scaling * t_placeholder
+        feats["trans_vectorfield_scaling"] = trans_vectorfield_scaling * t_placeholder
+        return feats
 
 
     def inference_fn(
