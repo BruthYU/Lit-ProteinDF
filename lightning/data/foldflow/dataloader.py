@@ -19,6 +19,7 @@ from Bio.PDB.Chain import Chain
 import dataclasses
 from preprocess.tools.protein import Protein
 import logging
+import random
 # Global map from chain characters to integers.
 ALPHANUMERIC = string.ascii_letters + string.digits + " "
 CHAIN_TO_INT = {chain_char: i for i, chain_char in enumerate(ALPHANUMERIC)}
@@ -240,6 +241,8 @@ def create_data_loader(
         else None,  # TODO Try without. Doesn't seem to matter
     )
 
+
+
 class TrainSampler(data.Sampler):
     def __init__(
         self,
@@ -378,63 +381,18 @@ class TrainSampler(data.Sampler):
 
     def __len__(self):
         return self.sampler_len
-class OldDistributedTrainSampler(data.Sampler):
-    r"""Sampler that restricts data loading to a subset of the dataset.
 
-    modified from torch.utils.data.distributed import DistributedSampler
 
-    .. note::
-        Dataset is assumed to be of constant size and that any instance of it always
-        returns the same elements in the same order.
-
-    Args:
-        dataset: Dataset used for sampling.
-        num_replicas (int, optional): Number of processes participating in
-            distributed training. By default, :attr:`world_size` is retrieved from the
-            current distributed group.
-        rank (int, optional): Rank of the current process within :attr:`num_replicas`.
-            By default, :attr:`rank` is retrieved from the current distributed
-            group.
-        shuffle (bool, optional): If ``True`` (default), sampler will shuffle the
-            indices.
-        seed (int, optional): random seed used to shuffle the sampler if
-            :attr:`shuffle=True`. This number should be identical across all
-            processes in the distributed group. Default: ``0``.
-        drop_last (bool, optional): if ``True``, then the sampler will drop the
-            tail of the data to make it evenly divisible across the number of
-            replicas. If ``False``, the sampler will add extra indices to make
-            the data evenly divisible across the replicas. Default: ``False``.
-
-    .. warning::
-        In distributed mode, calling the :meth:`set_epoch` method at
-        the beginning of each epoch **before** creating the :class:`DataLoader` iterator
-        is necessary to make shuffling work properly across multiple epochs. Otherwise,
-        the same ordering will be always used.
-
-    Example::
-
-        >>> # xdoctest: +SKIP
-        >>> sampler = DistributedSampler(dataset) if is_distributed else None
-        >>> loader = DataLoader(dataset, shuffle=(sampler is None),
-        ...                     sampler=sampler)
-        >>> for epoch in range(start_epoch, n_epochs):
-        ...     if is_distributed:
-        ...         sampler.set_epoch(epoch)
-        ...     train(loader)
-    """
-
-    def __init__(
-        self,
-        *,
-        data_conf,
-        dataset,
-        batch_size,
-        num_replicas: Optional[int] = None,
-        rank: Optional[int] = None,
-        shuffle: bool = True,
-        seed: int = 0,
-        drop_last: bool = False,
-    ) -> None:
+class NewDistributedSampler(data.Sampler):
+    def __init__(self,
+                 *,
+                 data_conf,
+                 dataset,
+                 batch_size,
+                 sample_mode,
+                 num_replicas: Optional[int] = None,
+                 rank: Optional[int] = None,
+                 seed: int = 0, drop_last: bool = False, is_training: bool = True) -> None:
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError("Requires distributed package to be available")
@@ -446,20 +404,52 @@ class OldDistributedTrainSampler(data.Sampler):
         if rank >= num_replicas or rank < 0:
             raise ValueError(
                 "Invalid rank {}, rank should be in the interval"
-                " [0, {}]".format(rank, num_replicas - 1)
-            )
+                " [0, {}]".format(rank, num_replicas - 1))
+        self._log = logging.getLogger(__name__)
         self._data_conf = data_conf
         self._dataset = dataset
+        self._batch_size = batch_size
+        self._sample_mode = sample_mode
         self._data_csv = self._dataset.csv
         self._dataset_indices = list(range(len(self._data_csv)))
-        self._data_csv["index"] = self._dataset_indices
-        # _repeated_size is the size of the dataset multiply by batch size
-        self._repeated_size = batch_size * len(self._data_csv)
-        self._batch_size = batch_size
+        self._data_csv['index'] = self._dataset_indices
+        self._is_training = is_training
+
+
+        if self._sample_mode in ['cluster_length_batch', 'cluster_time_batch']:
+            self._pdb_to_cluster = self._read_clusters()
+            self._max_cluster = max(self._pdb_to_cluster.values())
+            self._log.info(f'Read {self._max_cluster} clusters.')
+            self._missing_pdbs = 0
+
+            def cluster_lookup(pdb):
+                pdb = pdb.upper()
+                if pdb not in self._pdb_to_cluster:
+                    self._pdb_to_cluster[pdb] = self._max_cluster + 1
+                    self._max_cluster += 1
+                    self._missing_pdbs += 1
+                return self._pdb_to_cluster[pdb]
+
+            self._data_csv['cluster'] = self._data_csv['pdb_name'].map(cluster_lookup)
+            num_clusters = len(set(self._data_csv['cluster']))
+            self.sampler_len = num_clusters * self._batch_size
+            self._log.info(
+                f'Training on {num_clusters} clusters. PDBs without clusters: {self._missing_pdbs}'
+            )
+
+        # Distributed Sample Setting
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
+        assert batch_size % num_replicas == 0, "Batch size must be divisible by num_gpus"
+
         self.drop_last = drop_last
+        if self._is_training:
+            start_sample_list = self.get_train_sample_list()
+        else:
+            start_sample_list = self.get_eval_sample_list()
+        # _repeated_size is the size of the dataset multiply by batch size
+        self._repeated_size = len(start_sample_list)
         # If the dataset length is evenly divisible by # of replicas, then there
         # is no need to drop any data, since the dataset will be split equally.
         if self.drop_last and self._repeated_size % self.num_replicas != 0:  # type: ignore[arg-type]
@@ -472,59 +462,88 @@ class OldDistributedTrainSampler(data.Sampler):
         else:
             self.num_samples = math.ceil(self._repeated_size / self.num_replicas)  # type: ignore[arg-type]
         self.total_size = self.num_samples * self.num_replicas
-        self.shuffle = shuffle
         self.seed = seed
 
-    def __iter__(self):
-        if self.shuffle:
-            # deterministically shuffle based on epoch and seed
-            g = torch.Generator()
-            g.manual_seed(self.seed + self.epoch)
-            indices = torch.randperm(len(self._data_csv), generator=g).tolist()  # type: ignore[arg-type]
+    def _read_clusters(self):
+        pdb_to_cluster = {}
+        with open(self._data_conf.cluster_path, "r") as f:
+            for i, line in enumerate(f):
+                for chain in line.split(' '):
+                    pdb = chain.split('_')[0]
+                    pdb_to_cluster[pdb.upper()] = i
+        return pdb_to_cluster
+
+    def get_train_sample_list(self):
+        if self._sample_mode == 'length_batch':
+            # Each batch contains multiple proteins of the same length.
+            sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return sampled_order['index'].tolist()
+        elif self._sample_mode == 'time_batch':
+            # Each batch contains multiple time steps of the same protein.
+            random.shuffle(self._dataset_indices)
+            repeated_indices = np.repeat(self._dataset_indices, self._batch_size)
+            return repeated_indices
+        elif self._sample_mode == 'cluster_length_batch':
+            # Each batch contains multiple clusters of the same length.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=self.epoch)
+            sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return sampled_order['index'].tolist()
+        elif self._sample_mode == 'cluster_time_batch':
+            # Each batch contains multiple time steps of a protein from a cluster.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=self.epoch)
+            dataset_indices = sampled_clusters['index'].tolist()
+            repeated_indices = np.repeat(dataset_indices, self._batch_size)
+            return repeated_indices
         else:
-            indices = list(range(len(self._data_csv)))  # type: ignore[arg-type]
+            raise ValueError(f'Invalid sample mode: {self._sample_mode}')
 
-        # indices is expanded by self._batch_size times
-        indices = np.repeat(indices, self._batch_size)
+    def get_eval_sample_list(self):
+        '''
+        eval_num = num_eval_lengths * self._batch_size
+        '''
+        all_lengths = np.sort(self._data_csv.modeled_seq_len.unique())
+        length_indices = (len(all_lengths) - 1) * np.linspace(
+            0.0, 1.0, self._data_conf.num_eval_lengths)
+        length_indices = length_indices.astype(int)
+        eval_lengths = all_lengths[length_indices]
+        eval_csv = self._data_csv[self._data_csv.modeled_seq_len.isin(eval_lengths)]
+        # Fix a random seed to get the same split each time.
+        eval_csv = eval_csv.groupby('modeled_seq_len').sample(
+            self._batch_size, replace=True, random_state=self.epoch)
+        eval_csv = eval_csv.sort_values('modeled_seq_len', ascending=False)
+        return eval_csv['index'].tolist()
 
+    def __iter__(self):
+        if self._is_training:
+            indices = self.get_train_sample_list()
+        else:
+            indices = self.get_eval_sample_list()
         if not self.drop_last:
             # add extra samples to make it evenly divisible
             padding_size = self.total_size - len(indices)
-            if padding_size <= len(indices):
+            if padding_size == 0:
+                pass
+            elif padding_size <= len(indices):
                 indices = np.concatenate((indices, indices[:padding_size]), axis=0)
             else:
                 indices = np.concatenate(
-                    (
-                        indices,
-                        np.repeat(indices, math.ceil(padding_size / len(indices)))[
-                            :padding_size
-                        ],
-                    ),
-                    axis=0,
-                )
+                    (indices, np.repeat(indices, math.ceil(padding_size / len(indices)))[:padding_size]), axis=0)
 
         else:
             # remove tail of data to make it evenly divisible.
-            indices = indices[: self.total_size]
+            indices = indices[:self.total_size]
         assert len(indices) == self.total_size
 
-        # subsample
-        indices = indices[self.rank : self.total_size : self.num_replicas]
-
+        indices = indices[self.rank:self.total_size:self.num_replicas]
         assert len(indices) == self.num_samples
-
         return iter(indices)
 
     def __len__(self) -> int:
         return self.num_samples
 
-    def add_epoch(self) -> None:
-        r"""
-        Sets the epoch for this sampler. When :attr:`shuffle=True`, this ensures all replicas
-        use a different random ordering for each epoch. Otherwise, the next iteration of this
-        sampler will yield the same ordering.
-
-        Args:
-            epoch (int): Epoch number.
-        """
-        self.epoch = self.epoch + 1
+    def set_epoch(self, epoch):
+        self.epoch = epoch

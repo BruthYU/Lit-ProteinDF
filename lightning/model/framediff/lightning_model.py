@@ -160,6 +160,7 @@ class framediff_Lightning_Model(pl.LightningModule):
                 b_factors=np.tile(1 - unpad_fixed_mask[..., None], 37) * 100
             )
             try:
+                # Including TM_Score
                 sample_metrics = metrics.protein_metrics(
                     pdb_path=saved_path,
                     atom37_pos=unpad_prot,

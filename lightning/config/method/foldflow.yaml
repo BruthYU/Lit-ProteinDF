@@ -99,6 +99,8 @@ experiment:
   num_gpus: 1
   sample_mode: cluster_time_batch
 
+  # Wandb logging
+  use_wandb: False
 
   # How many steps to checkpoint between.
   ckpt_freq: 5000

@@ -20,6 +20,7 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
         self.fm_conf = conf.flow_matcher
         self.method_name = conf.method_name
         self.data_module = self.init_data_module(self.method_name)
+        self.cache_module = self.init_cache_module(self.method_name)
         # import utils for to create dataloader
         self.dataloader = importlib.import_module(f'lightning.data.{self.method_name}.dataloader')
 
@@ -27,12 +28,13 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
         if stage == 'fit' or stage is None:
+            self.lmdb_cache = self.instancialize_module(module=self.cache_module, data_conf=self.data_conf)
             '''Train Dataset'''
-            self.trainset = self.instancialize_module(module=self.data_module, data_conf=self.data_conf, fm_conf=self.fm_conf,
+            self.trainset = self.instancialize_module(module=self.data_module, lmdb_cache=self.lmdb_cache, data_conf=self.data_conf, fm_conf=self.fm_conf,
                                                       is_training=True, is_OT=self.fm_conf.ot_plan, ot_fn=self.fm_conf.ot_fn, reg=self.fm_conf.reg)
 
             '''Valid Dataset'''
-            self.valset = self.instancialize_module(module=self.data_module, data_conf=self.data_conf, fm_conf=self.fm_conf,
+            self.valset = self.instancialize_module(module=self.data_module, lmdb_cache=self.lmdb_cache, data_conf=self.data_conf, fm_conf=self.fm_conf,
                                                       is_training=False, is_OT=self.fm_conf.ot_plan, ot_fn=self.fm_conf.ot_fn, reg=self.fm_conf.reg)
 
 
@@ -50,13 +52,12 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
         '''
         Distributed Sampler
         '''
-        train_sampler = self.dataloader.OldDistributedTrainSampler(
+        train_sampler = self.dataloader.NewDistributedSampler(
                 data_conf=self.data_conf,
                 dataset=self.trainset,
                 batch_size=self.exp_conf.batch_size,
                 sample_mode=self.exp_conf.sample_mode,
                 max_squared_res=self.exp_conf.max_squared_res,
-                num_gpus=self.exp_conf.num_gpus,  # TODO fix arg based on actual fabric
             )
 
         train_loader = self.dataloader.create_data_loader(
@@ -73,7 +74,13 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
         return train_loader
 
     def val_dataloader(self):
-        valid_sampler = None
+        valid_sampler = self.dataloader.NewDistributedSampler(
+            data_conf=self.data_conf,
+            dataset=self.valset,
+            batch_size=self.data_conf.samples_per_eval_length,
+            sample_mode=None,
+            is_training=False
+        )
         valid_loader = self.dataloader.create_data_loader(
             self.valset,
             sampler=valid_sampler,
@@ -98,3 +105,6 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
 
     def init_data_module(self, name, **other_args):
         return getattr(importlib.import_module(f'data.{name}.dataset'), f'{name}_Dataset')
+
+    def init_cache_module(self, name, **other_args):
+        return getattr(importlib.import_module(f'data.{name}.dataset'), f'LMDB_Cache')

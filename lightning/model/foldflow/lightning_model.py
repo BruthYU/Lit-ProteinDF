@@ -21,7 +21,7 @@ import pandas as pd
 import tree
 from lightning.model.foldflow import network
 from lightning.data.foldflow import se3_fm
-from lightning.sampler.foldflow.sampler_module import foldflow_Sampler
+
 import copy
 import logging
 LOG = logging.getLogger(__name__)
@@ -39,6 +39,7 @@ class foldflow_Lightning_Model(pl.LightningModule):
 
         self.flow_matcher = se3_fm.SE3FlowMatcher(self.fm_conf)
         self.model = network.VectorFieldNetwork(self.model_conf, self.fm_conf)
+        self.validation_step_outputs = []
 
 
     def forward(self, batch, cond):
@@ -62,19 +63,20 @@ class foldflow_Lightning_Model(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        return self.eval_fn(batch, batch_idx, noise_scale=self.exp_conf.noise_scale)
+        eval_fn_output = self.eval_fn(batch, batch_idx, noise_scale=self.exp_conf.noise_scale)
+        self.log("tm_score", np.mean([x['tm_score'] for x in eval_fn_output]), on_epoch=True, prog_bar=True)
+        self.validation_step_outputs.append(eval_fn_output)
 
-    def validation_epoch_end(self, validation_step_outputs) -> None:
+    def on_validation_epoch_end(self) -> None:
         ckpt_eval_metrics = []
-        for batch_eval_metrics in validation_step_outputs:
+        for batch_eval_metrics in self.validation_step_outputs:
             ckpt_eval_metrics.extend(batch_eval_metrics)
-        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, "metrics.csv")
+        eval_metrics_csv_path = os.path.join(self.exp_conf.eval_dir, f'epoch_{self.current_epoch}', f"validation_rank_{self.local_rank}_metrics.csv")
         ckpt_eval_metrics = pd.DataFrame(ckpt_eval_metrics)
         ckpt_eval_metrics.to_csv(eval_metrics_csv_path, index=False)
+        self.validation_step_outputs.clear()
 
 
-    def test_step(self, batch, batch_idx):
-        return self.validation_step(batch, batch_idx)
 
     def get_schedular(self, optimizer, lr_scheduler='onecycle'):
         if lr_scheduler == 'step':
@@ -319,13 +321,14 @@ class foldflow_Lightning_Model(pl.LightningModule):
         noise_scale=1.0,
         context=None,
     ):
-        valid_feats, pdb_names = batch
+        valid_feats = batch
         batch_eval_metrics = []
 
         res_mask = du.move_to_np(valid_feats["res_mask"].bool())
         fixed_mask = du.move_to_np(valid_feats["fixed_mask"].bool())
         aatype = du.move_to_np(valid_feats["aatype"])
         gt_prot = du.move_to_np(valid_feats["atom37_pos"])
+        lmdbIndex = du.move_to_np(valid_feats['lmdbIndex'])
         batch_size = res_mask.shape[0]
 
         # Run inference
@@ -347,9 +350,9 @@ class foldflow_Lightning_Model(pl.LightningModule):
             percent_flowed = np.sum(unpad_flow_mask) / num_res
 
             prot_path = os.path.join(
-                self.exp_conf.eval_dir,
-                f"len_{num_res}_sample_{i}_batch_{batch_idx}_flowed_{percent_flowed:.2f}.pdb",
-            )
+                    self.exp_conf.eval_dir,
+                    f'epoch_{self.current_epoch}',
+                    f'Rank{self.local_rank}_B{batch_idx}S{i}_lmdbIndex_{lmdbIndex[i]}_len_{num_res}.pdb')
 
             # Extract argmax predicted aatype
             saved_path = au.write_prot_to_pdb(
@@ -361,6 +364,7 @@ class foldflow_Lightning_Model(pl.LightningModule):
 
 
             try:
+                # Including TM_Score
                 sample_metrics = metrics.protein_metrics(
                     pdb_path=saved_path,
                     atom37_pos=unpad_prot,
@@ -373,12 +377,12 @@ class foldflow_Lightning_Model(pl.LightningModule):
                     f"Failed evaluation of length {num_res} sample {i}: {e}"
                 )
                 continue
-            sample_metrics["step"] = self.trained_steps
+
+            sample_metrics['lmdb_csv_Index'] = lmdbIndex[i]
             sample_metrics["num_res"] = num_res
             sample_metrics["fixed_residues"] = np.sum(unpad_fixed_mask)
             sample_metrics["flowed_percentage"] = percent_flowed
             sample_metrics["sample_path"] = saved_path
-            sample_metrics["gt_pdb"] = pdb_names[i]
             batch_eval_metrics.append(sample_metrics)
 
         return batch_eval_metrics

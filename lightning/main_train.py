@@ -33,6 +33,7 @@ class MethodCallback(Callback):
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         if self.method_name in ['framediff', 'foldflow']:
             trainer.train_dataloader.sampler.set_epoch(pl_module.current_epoch)
+            trainer.val_dataloaders.sampler.set_epoch(pl_module.current_epoch)
 
 
 def load_callbacks(conf):
@@ -71,14 +72,6 @@ def run(conf: DictConfig) -> None:
     data_interface.datamodule.setup()
     model_interface = MInterface(conf)
 
-    gpu_count = torch.cuda.device_count()
-    conf.experiment.steps_per_epoch = math.ceil(len(data_interface.datamodule.trainset)
-                                                / conf.experiment.batch_size / gpu_count)
-    LOG.info(f"steps_per_epoch {conf.experiment.steps_per_epoch},  gpu_count {gpu_count}, "
-             f"batch_size {conf.experiment.batch_size}")
-    print(os.getcwd())
-
-    #dir = os.getcwd(),
 
 
     trainer_config = {

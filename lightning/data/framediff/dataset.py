@@ -29,8 +29,8 @@ class LMDB_Cache:
                 result_tuples.append(pickle.loads(value))
 
         '''
-        Lmdb index may be different from filtered_protein.csv due to multiprocessing
-        We directly recover the csv from lmdb cache 
+        Lmdb index may not match filtered_protein.csv due to multiprocessing,
+        So we directly recover csv from the lmdb cache. 
         '''
         lmdb_series = [x[3] for x in result_tuples]
         self.csv = pd.DataFrame(lmdb_series).reset_index(drop=True)
@@ -42,7 +42,6 @@ class LMDB_Cache:
         self.gt_bb_rigid_vals = _get_list(1)
         self.pdb_names = _get_list(2)
         self.csv_rows = _get_list(3)
-        pass
 
     def get_cache_csv_row(self, idx):
         # if self.csv is not None:

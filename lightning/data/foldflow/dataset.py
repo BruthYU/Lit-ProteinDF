@@ -29,24 +29,32 @@ class LMDB_Cache:
 
     def cache_to_memory(self):
         print(f"Loading cache from local dataset @ {self.cache_dir}")
-        csv_path = os.path.join(self.cache_dir,"filtered_protein.csv")
-        self.csv = pd.read_csv(csv_path)
         self.local_cache = lmdb.open(self.cache_dir)
         result_tuples = []
         with self.local_cache.begin() as txn:
             for _, value in txn.cursor():
                 result_tuples.append(pickle.loads(value))
 
-        assert len(result_tuples) == len(self.csv)
+        '''
+        Lmdb index may not match filtered_protein.csv due to multiprocessing,
+        So we directly recover csv from the lmdb cache. 
+        '''
+        lmdb_series = [x[3] for x in result_tuples]
+        self.csv = pd.DataFrame(lmdb_series).reset_index(drop=True)
+        self.csv.to_csv("lmdb_protein.csv", index=True)
+
         def _get_list(idx):
             return list(map(lambda x: x[idx], result_tuples))
         self.chain_ftrs = _get_list(0)
         self.gt_bb_rigid_vals = _get_list(1)
         self.pdb_names = _get_list(2)
         self.csv_rows = _get_list(3)
-        pass
 
     def get_cache_csv_row(self, idx):
+        # if self.csv is not None:
+        #     # We are going to get the idx row out of the csv -> so we look for true index based on index cl
+        #     idx = self.csv.iloc[idx]["index"]
+
         return (
             self.chain_ftrs[idx],
             self.gt_bb_rigid_vals[idx],
@@ -223,10 +231,8 @@ class foldflow_Dataset(data.Dataset):
             lambda x: x if torch.is_tensor(x) else torch.tensor(x), chain_feats
         )
         final_feats = du.pad_feats(final_feats, csv_row["modeled_seq_len"])
-        if self.is_training:
-            return final_feats
-        else:
-            return final_feats, pdb_name
+        chain_feats['lmdbIndex'] = idx
+        return final_feats
 
 
 

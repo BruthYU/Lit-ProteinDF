@@ -79,7 +79,7 @@ class framediff_Lightning_Datamodule(pl.LightningDataModule):
             data_conf=self.data_conf,
             dataset=self.valset,
             batch_size=self.data_conf.samples_per_eval_length,
-            sample_mode=self.exp_conf.train_sample_mode,
+            sample_mode=None,
             is_training=False
         )
         valid_loader = self.dataloader.create_data_loader(
