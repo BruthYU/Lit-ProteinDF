@@ -31,6 +31,7 @@ class SO3ConditionalFlowMatcher:
         xt = self.vec_manifold.exp_not_from_identity(t.reshape(-1, 1) * log_x1, rot_x0)
         xt = self.vec_manifold.matrix_from_rotation_vector(xt)
         torch.set_default_dtype(torch.float32)
+        xt = torch.from_numpy(xt)
         return xt
 
     def compute_conditional_flow_simple(self, t, xt):

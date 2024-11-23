@@ -80,7 +80,7 @@ def run(conf: DictConfig) -> None:
         'precision': '32',
         'max_epochs': conf.experiment.num_epoch,  # Maximum number of epochs to train for
         'num_nodes': 1,  # Number of nodes to use for distributed training
-        "strategy": 'ddp_find_unused_parameters_true',
+        "strategy": conf.experiment.strategy,
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),

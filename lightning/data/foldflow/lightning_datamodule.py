@@ -57,7 +57,6 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
                 dataset=self.trainset,
                 batch_size=self.exp_conf.batch_size,
                 sample_mode=self.exp_conf.sample_mode,
-                max_squared_res=self.exp_conf.max_squared_res,
             )
 
         train_loader = self.dataloader.create_data_loader(
@@ -87,7 +86,7 @@ class foldflow_Lightning_Datamodule(pl.LightningDataModule):
             sampler=valid_sampler,
             np_collate=False,
             length_batch=False,
-            batch_size=self.exp_conf.eval_batch_size,
+            batch_size=self.data_conf.samples_per_eval_length // valid_sampler.num_replicas,
             shuffle=False,
             num_workers=num_workers,
             drop_last=False,

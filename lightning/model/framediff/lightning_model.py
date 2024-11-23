@@ -50,7 +50,6 @@ class framediff_Lightning_Model(pl.LightningModule):
             "trans_loss": aux_data["trans_loss"],
             "bb_atom_loss": aux_data["bb_atom_loss"],
             "dist_mat_loss": aux_data["dist_mat_loss"],
-            "batch_size": aux_data["examples_per_step"]
         }
         self.log_dict(log_info, on_step=True, on_epoch=True, prog_bar=True)
         return loss
@@ -195,9 +194,9 @@ class framediff_Lightning_Model(pl.LightningModule):
             loss: Final training loss scalar.
             aux_data: Additional logging data.
         """
-        # if self.model_conf.embed.embed_self_conditioning and random.random() > 0.5:
-        #     with torch.no_grad():
-        #         batch = self.self_conditioning(batch)
+        if self.model_conf.embed.embed_self_conditioning and random.random() > 0.5:
+            with torch.no_grad():
+                batch = self.self_conditioning(batch)
         model_out = self.model(batch)
         bb_mask = batch['res_mask']
         diffuse_mask = 1 - batch['fixed_mask']

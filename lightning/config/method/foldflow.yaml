@@ -14,8 +14,9 @@ dataset:
     min_beta_percent: -1.0
     rog_quantile: 0.96
   min_t: 0.01
-  samples_per_eval_length: 4
   num_eval_lengths: 10
+  samples_per_eval_length: 4
+
   num_t: 100
   max_same_res: 50 # the number of pdb with the same number of residue to use to compute the ot plan.
   num_csv_processors: 5
@@ -76,6 +77,7 @@ model:
   axis_angle: ${flow_matcher.so3.axis_angle}
 
 experiment:
+  strategy: ddp
   # Experiment metadata
   seed: 111
   name: baseline
@@ -104,7 +106,7 @@ experiment:
   prefetch_factor: 100
   use_gpu: True
   num_gpus: 1
-  sample_mode: cluster_time_batch
+  sample_mode: time_batch
 
   # Wandb logging
   use_wandb: False

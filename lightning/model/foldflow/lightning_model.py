@@ -38,7 +38,7 @@ class foldflow_Lightning_Model(pl.LightningModule):
         self.data_conf = conf.dataset
 
         self.flow_matcher = se3_fm.SE3FlowMatcher(self.fm_conf)
-        self.model = network.VectorFieldNetwork(self.model_conf, self.fm_conf)
+        self.model = network.VectorFieldNetwork(self.model_conf, self.flow_matcher)
         self.validation_step_outputs = []
 
 
@@ -56,7 +56,6 @@ class foldflow_Lightning_Model(pl.LightningModule):
             "trans_loss": aux_data["trans_loss"],
             "bb_atom_loss": aux_data["bb_atom_loss"],
             "dist_mat_loss": aux_data["dist_mat_loss"],
-            "batch_size": aux_data["examples_per_step"]
         }
         self.log_dict(log_info, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -136,13 +135,13 @@ class foldflow_Lightning_Model(pl.LightningModule):
         """
         if (
             self.model_conf.embed.embed_self_conditioning
-            and self.trained_steps % 2 == 1
+            and self.global_step % 2 == 1
         ):
             # if self.model_conf.embed.embed_self_conditioning and random.random() > 0.5:
             with torch.no_grad():
                 batch = self.self_conditioning(batch)
 
-        _, gt_rot_u_t = self._flow_matcher._so3_fm.vectorfield(
+        _, gt_rot_u_t = self.flow_matcher._so3_fm.vectorfield(
             batch["rot_vectorfield"], batch["rot_t"], batch["t"]
         )
 
@@ -358,7 +357,6 @@ class foldflow_Lightning_Model(pl.LightningModule):
             saved_path = au.write_prot_to_pdb(
                 unpad_prot,
                 prot_path,
-                no_indexing=True,
                 b_factors=np.tile(1 - unpad_fixed_mask[..., None], 37) * 100,
             )
 
