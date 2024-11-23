@@ -24,6 +24,7 @@ from lightning.data.foldflow import se3_fm
 
 import copy
 import logging
+import time
 LOG = logging.getLogger(__name__)
 
 # TODO foldflow-model
@@ -144,6 +145,7 @@ class foldflow_Lightning_Model(pl.LightningModule):
         _, gt_rot_u_t = self.flow_matcher._so3_fm.vectorfield(
             batch["rot_vectorfield"], batch["rot_t"], batch["t"]
         )
+
 
         model_out = self.model(batch)
         bb_mask = batch["res_mask"]

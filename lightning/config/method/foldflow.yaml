@@ -88,7 +88,7 @@ experiment:
 
   # Training arguments
   log_freq: 100
-  batch_size: 256
+  batch_size: 8
   eval_batch_size: ${dataset.samples_per_eval_length}
   num_loader_workers: 12
   torch_num_threads: 8
