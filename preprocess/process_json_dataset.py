@@ -13,11 +13,11 @@ import json
 import multiprocessing as mp
 import os
 import time
-
+import sys
 import numpy as np
 import pandas as pd
 
-
+sys.path.append('..')
 from preprocess.tools import utils as du, errors, parsers
 
 

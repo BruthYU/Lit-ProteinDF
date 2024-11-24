@@ -19,6 +19,8 @@ import pandas as pd
 from Bio.PDB import PDBIO, MMCIFParser
 from tqdm import tqdm
 
+import sys
+sys.path.append('..')
 from tools import mmcif_parsing, parsers, errors, utils as du
 
 # Define the parser

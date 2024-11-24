@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np
 from multiprocessing import get_context
 from multiprocessing.managers import SharedMemoryManager
+import sys
+sys.path.append('..')
 
 from scipy.spatial.transform import Rotation
 from sklearn.linear_model import LinearRegression
@@ -21,7 +23,10 @@ from preprocess.tools import utils as du
 from evaluate.openfold.utils import rigid_utils
 from evaluate.openfold.data import data_transforms
 
+
 _BYTES_PER_PROTEIN = int(9e5)
+
+
 
 def get_list_chunk_slices(lst, chunk_size):
     return [(i, i + chunk_size) for i in range(0, len(lst), chunk_size)]
@@ -68,6 +73,9 @@ def get_csv_row(csv, idx):
     return chain_feats, gt_bb_rigid, pdb_name, csv_row
 
 
+'''
+Numpy Version < 2.0
+'''
 def _process_csv_row(csv, processed_file_path):
     processed_feats = du.read_pkl(processed_file_path)
     processed_feats = du.parse_chain_feats(processed_feats)

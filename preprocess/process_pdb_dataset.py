@@ -19,6 +19,8 @@ from Bio import PDB
 import numpy as np
 import mdtraj as md
 
+import sys
+sys.path.append('..')
 from preprocess.tools import utils as du, errors, parsers
 
 # Define the parser
