@@ -5,8 +5,7 @@ from torch.utils import data
 import tree
 import torch
 import numpy as np
-import lightning.data.framediff.dataloader as du
-from lightning.data.framediff import se3_diffuser
+import lightning.data.genie2.feat_utils as feat_utils
 import pandas as pd
 import os
 import math
@@ -56,6 +55,135 @@ class LMDB_Cache:
             self.pdb_names[idx],
             self.csv_rows[idx],
         )
+
+
+
+
+class genie2_Dataset(data.Dataset):
+    def __init__(self,
+                 lmdb_cache,
+                 data_conf=None,):
+        super().__init__()
+        assert lmdb_cache, "No cache to build dataset."
+        self.lmdb_cache = lmdb_cache
+        self.csv = self.lmdb_cache.csv
+        self.data_conf = data_conf
+
+    def __len__(self):
+        return len(self.csv)
+
+    def __getitem__(self, idx):
+        chain_feats, gt_bb_rigid, pdb_name, csv_row = self.lmdb_cache.get_cache_csv_row(idx)
+        aatype, atom_positions, chain_idx = \
+            chain_feats['aatype'], chain_feats['bb_positions'], chain_feats['chain_idx']
+        all_chain_idx = np.unique(chain_idx).tolist()
+        lengths = [np.sum(chain_idx == x) for x in all_chain_idx]
+        np_features = feat_utils.create_empty_np_features(lengths)
+
+        np_features['aatype'] = aatype.astype(int)
+        np_features['atom_positions'] = atom_positions.astype(float)
+
+        if np.random.random() <= self.motif_prob:
+            np_features = self._update_motif_masks(np_features)
+
+        # Pad
+        np_features = feat_utils.pad_np_features(
+            np_features,
+            self.max_n_chain,
+            self.max_n_res
+        )
+
+        return np_features
+
+    def _update_motif_masks(self, np_features):
+        """
+        Update fixed sequence and structure mask in the feature dictionary to indicate
+        where to provide motif sequence and structure information as conditions. Note
+        that since Genie 2 is trained on single-motif scaffolding tasks, we did not
+        modify fixed_group in the feature dictionary since all motif residues belong to
+        the same group (initialized to group 0).
+
+        Implemention of Algorithm 1.
+
+        Args:
+            np_features:
+                A feature dictionary containing information on an input structure
+                of length N, including
+                    -	aatype:
+                            [N, 20] one-hot encoding on amino acid types
+                    -	num_chains:
+                            [1] number of chains in the structure
+                    -	num_residues:
+                            [1] number of residues in the structure
+                    -	num_residues_per_chain:
+                            [1] an array of number of residues by chain
+                    -	atom_positions:
+                            [N, 3] an array of Ca atom positions
+                    -	residue_mask:
+                            [N] residue mask to indicate which residue position is masked
+                    -	residue_index:
+                            [N] residue index (started from 0)
+                    -	chain_index:
+                            [N] chain index (started from 0)
+                    -	fixed_sequence_mask:
+                            [N] mask to indicate which residue contains conditional
+                            sequence information
+                    -	fixed_structure_mask:
+                            [N, N] mask to indicate which pair of residues contains
+                            conditional structural information
+                    -	fixed_group:
+                            [N] group index to indicate which group the residue belongs to
+                            (useful for specifying multiple functional motifs)
+                    -	interface_mask:
+                            [N] deprecated and set to all zeros.
+
+        Returns:
+            np_features:
+                An updated feature dictionary.
+        """
+
+        # Sanity check
+        assert np_features['num_chains'] == 1, 'Input must be monomer'
+
+        # Sample number of motif residues
+        motif_n_res = np.random.randint(
+            np.floor(np_features['num_residues'] * self.motif_min_pct_res),
+            np.ceil(np_features['num_residues'] * self.motif_max_pct_res)
+        )
+
+        # Sample number of motif segments
+        motif_n_seg = np.random.randint(
+            self.motif_min_n_seg,
+            min(self.motif_max_n_seg, motif_n_res) + 1
+        )
+
+        # Sample motif segments
+        indices = sorted(np.random.choice(motif_n_res - 1, motif_n_seg - 1, replace=False) + 1)
+        indices = [0] + indices + [motif_n_res]
+        motif_seg_lens = [indices[i + 1] - indices[i] for i in range(motif_n_seg)]
+
+        # Generate motif mask
+        segs = [''.join(['1'] * l) for l in motif_seg_lens]
+        segs.extend(['0'] * (np_features['num_residues'] - motif_n_res))
+        random.shuffle(segs)
+        motif_sequence_mask = np.array([int(elt) for elt in ''.join(segs)]).astype(bool)
+        motif_structure_mask = motif_sequence_mask[:, np.newaxis] * motif_sequence_mask[np.newaxis, :]
+        motif_structure_mask = motif_structure_mask.astype(bool)
+
+        # Update
+        np_features['fixed_sequence_mask'] = motif_sequence_mask
+        np_features['fixed_structure_mask'] = motif_structure_mask
+
+        return np_features
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     config = OmegaConf.load("../../config/method/genie2.yaml")

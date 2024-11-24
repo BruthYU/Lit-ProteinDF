@@ -177,41 +177,41 @@ class BuildCache:
         filter_conf = self.data_conf.filtering
         pdb_csv = pd.read_csv(self.data_conf.csv_path)
 
-        if (
-            filter_conf.allowed_oligomer is not None
-            and len(filter_conf.allowed_oligomer) > 0 and pdb_csv.columns.__contains__("oligomeric_detail")
-        ):
-            pdb_csv = pdb_csv[
-                pdb_csv.oligomeric_detail.isin(filter_conf.allowed_oligomer)
-            ]
-
-        if filter_conf.max_len is not None:
-            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len <= filter_conf.max_len]
-
-        if filter_conf.min_len is not None:
-            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len >= filter_conf.min_len]
-
-        if filter_conf.max_helix_percent is not None and pdb_csv.columns.__contains__("helix_percent"):
-            pdb_csv = pdb_csv[pdb_csv.helix_percent < filter_conf.max_helix_percent]
-
-        if filter_conf.max_loop_percent is not None and pdb_csv.columns.__contains__("coil_percent"):
-            pdb_csv = pdb_csv[pdb_csv.coil_percent < filter_conf.max_loop_percent]
-
-        if filter_conf.min_beta_percent is not None and pdb_csv.columns.__contains__("strand_percent"):
-            pdb_csv = pdb_csv[pdb_csv.strand_percent > filter_conf.min_beta_percent]
-
-        if filter_conf.rog_quantile is not None and filter_conf.rog_quantile > 0.0 \
-                and pdb_csv.columns.__contains__("radius_gyration"):
-            prot_rog_low_pass = _rog_quantile_curve(
-                pdb_csv, filter_conf.rog_quantile, np.arange(filter_conf.max_len)
-            )
-            row_rog_cutoffs = pdb_csv.modeled_seq_len.map(
-                lambda x: prot_rog_low_pass[x - 1]
-            )
-            pdb_csv = pdb_csv[pdb_csv.radius_gyration < row_rog_cutoffs]
-
-        if filter_conf.subset is not None:
-            pdb_csv = pdb_csv[: filter_conf.subset]
+        # if (
+        #     filter_conf.allowed_oligomer is not None
+        #     and len(filter_conf.allowed_oligomer) > 0 and pdb_csv.columns.__contains__("oligomeric_detail")
+        # ):
+        #     pdb_csv = pdb_csv[
+        #         pdb_csv.oligomeric_detail.isin(filter_conf.allowed_oligomer)
+        #     ]
+        #
+        # if filter_conf.max_len is not None:
+        #     pdb_csv = pdb_csv[pdb_csv.modeled_seq_len <= filter_conf.max_len]
+        #
+        # if filter_conf.min_len is not None:
+        #     pdb_csv = pdb_csv[pdb_csv.modeled_seq_len >= filter_conf.min_len]
+        #
+        # if filter_conf.max_helix_percent is not None and pdb_csv.columns.__contains__("helix_percent"):
+        #     pdb_csv = pdb_csv[pdb_csv.helix_percent < filter_conf.max_helix_percent]
+        #
+        # if filter_conf.max_loop_percent is not None and pdb_csv.columns.__contains__("coil_percent"):
+        #     pdb_csv = pdb_csv[pdb_csv.coil_percent < filter_conf.max_loop_percent]
+        #
+        # if filter_conf.min_beta_percent is not None and pdb_csv.columns.__contains__("strand_percent"):
+        #     pdb_csv = pdb_csv[pdb_csv.strand_percent > filter_conf.min_beta_percent]
+        #
+        # if filter_conf.rog_quantile is not None and filter_conf.rog_quantile > 0.0 \
+        #         and pdb_csv.columns.__contains__("radius_gyration"):
+        #     prot_rog_low_pass = _rog_quantile_curve(
+        #         pdb_csv, filter_conf.rog_quantile, np.arange(filter_conf.max_len)
+        #     )
+        #     row_rog_cutoffs = pdb_csv.modeled_seq_len.map(
+        #         lambda x: prot_rog_low_pass[x - 1]
+        #     )
+        #     pdb_csv = pdb_csv[pdb_csv.radius_gyration < row_rog_cutoffs]
+        #
+        # if filter_conf.subset is not None:
+        #     pdb_csv = pdb_csv[: filter_conf.subset]
 
         pdb_csv = pdb_csv.sort_values("modeled_seq_len", ascending=False)
         self._create_split(pdb_csv)

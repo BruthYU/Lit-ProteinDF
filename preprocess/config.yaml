@@ -1,5 +1,5 @@
-csv_path: ./pkl/jsonl/metadata.csv
-cache_path: .cache/jsonl
+csv_path: ./pkl/pdb/metadata.csv
+cache_path: .cache/pdb
 filtering:
   max_len: 256
   min_len: 1
