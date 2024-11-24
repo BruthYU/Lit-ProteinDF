@@ -1,0 +1,4 @@
+# @package _global_
+method_name: genie2
+dataset:
+  cache_dir: ../../../preprocess/.cache/jsonl
