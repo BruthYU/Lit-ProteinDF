@@ -60,9 +60,10 @@ experiment:
   use_wandb: False
 
   seed: 100
-  n_epoch: 1
+  num_epoch: 5
   batch_size: 12
   log_every_n_step: 1000
   ckpt_freq: 10
   condition_loss_weight: 1
   lr: 0.0001
+  lr_scheduler: null

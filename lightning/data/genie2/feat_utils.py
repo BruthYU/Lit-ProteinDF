@@ -7,6 +7,23 @@ from lightning.data.genie2.motif_utils import load_motif_spec, sample_motif_mask
 from itertools import compress
 
 
+def prepare_tensor_features(features):
+    return {
+        'num_chains': features['num_chains'].int(),
+        'num_residues': features['num_residues'].int(),
+        'num_residues_per_chain': features['num_residues_per_chain'].int(),
+        'aatype': features['aatype'].int(),
+        'atom_positions': features['atom_positions'].float(),
+        'residue_mask': features['residue_mask'].int(),
+        'residue_index': features['residue_index'].int(),
+        'chain_index': features['chain_index'].int(),
+        'fixed_sequence_mask': features['fixed_sequence_mask'].bool(),
+        'fixed_structure_mask': features['fixed_structure_mask'].bool(),
+        'fixed_group': features['fixed_group'].int(),
+        'interface_mask': features['interface_mask'].bool()
+    }
+
+
 def pad_np_features(np_features, max_n_chain, max_n_res):
     num_chains = np_features['num_chains']
     num_residues = np_features['num_residues']
