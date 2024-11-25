@@ -62,6 +62,7 @@ model:
 
 experiment:
   strategy: ddp_find_unused_parameters_true
+  use_distributed_sampler: False
   # Experiment metadata
   seed: 111
   name: baseline
@@ -97,8 +98,8 @@ experiment:
   # Wandb logging
   use_wandb: False
 
-  # How many steps to checkpoint between.
-  ckpt_freq: 10000
+  # How many epochs to checkpoint between.
+  ckpt_freq: 10
   # Take early checkpoint at step 100. Helpful for catching eval bugs early.
   early_ckpt: True
 

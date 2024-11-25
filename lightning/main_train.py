@@ -84,7 +84,7 @@ def run(conf: DictConfig) -> None:
         "accumulate_grad_batches": 1,
         'accelerator': 'cuda',  
         'callbacks': load_callbacks(conf),
-        'use_distributed_sampler': False,
+        'use_distributed_sampler': conf.experiment.use_distributed_sampler,
         'logger': pl_logger
     }
 

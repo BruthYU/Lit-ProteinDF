@@ -49,9 +49,14 @@ parser.add_argument(
     '--verbose',
     help='Whether to log everything.',
     action='store_true')
+parser.add_argument(
+    '--max_len',
+    help='Max length of protein.',
+    type=int,
+    default=256)
 
 
-def process_file(file_path: str, write_dir: str):
+def process_file(file_path: str, max_len: int, write_dir: str):
     """Processes protein file into usable, smaller pickles.
 
     Args:
@@ -102,8 +107,9 @@ def process_file(file_path: str, write_dir: str):
     complex_aatype = complex_feats['aatype']
     metadata['seq_len'] = len(complex_aatype)
     modeled_idx = np.where(complex_aatype != 20)[0]
-    if np.sum(complex_aatype != 20) == 0:
-        raise errors.LengthError('No modeled residues')
+    if complex_aatype.shape[0] > max_len:
+        raise errors.LengthError(
+            f'Too long {complex_aatype.shape[0]}')
     min_modeled_idx = np.min(modeled_idx)
     max_modeled_idx = np.max(modeled_idx)
     metadata['modeled_seq_len'] = max_modeled_idx - min_modeled_idx + 1
@@ -136,13 +142,14 @@ def process_file(file_path: str, write_dir: str):
     return metadata
 
 
-def process_serially(all_paths, write_dir):
+def process_serially(all_paths, max_len, write_dir):
     all_metadata = []
     for i, file_path in enumerate(all_paths):
         try:
             start_time = time.time()
             metadata = process_file(
                 file_path,
+                max_len,
                 write_dir)
             elapsed_time = time.time() - start_time
             print(f'Finished {file_path} in {elapsed_time:2.2f}s')
@@ -154,12 +161,14 @@ def process_serially(all_paths, write_dir):
 
 def process_fn(
         file_path,
+        max_len=None,
         verbose=None,
         write_dir=None):
     try:
         start_time = time.time()
         metadata = process_file(
             file_path,
+            max_len,
             write_dir)
         elapsed_time = time.time() - start_time
         if verbose:
@@ -190,10 +199,12 @@ def main(args):
     if args.num_processes == 1 or args.debug:
         all_metadata = process_serially(
             all_file_paths,
+            args.max_len,
             write_dir)
     else:
         _process_fn = fn.partial(
             process_fn,
+            max_len=args.max_len,
             verbose=args.verbose,
             write_dir=write_dir)
         with mp.Pool(processes=args.num_processes) as pool:
@@ -204,6 +215,7 @@ def main(args):
     succeeded = len(all_metadata)
     print(
         f'Finished processing {succeeded}/{total_num_paths} files')
+    print(f'--[Only process proteins less than {args.max_len} in length.]--')
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ from evaluate.openfold.utils import rigid_utils
 from evaluate.openfold.data import data_transforms
 
 
-_BYTES_PER_PROTEIN = int(9e5)
+_BYTES_PER_PROTEIN = int(1e6)
 
 
 
@@ -258,7 +258,7 @@ class BuildCache:
 
         # Initialize local cache with lmdb
         self._local_cache = lmdb.open(
-            self.cache_path, map_size=(1024**3) * 13
+            self.cache_path, map_size=(1024**3) * 5
         )  # 1GB * 13
 
         st_time = time.time()

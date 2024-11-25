@@ -189,7 +189,7 @@ def main(args):
     jsonl_path = args.jsonl_path
     with open(jsonl_path) as f:
         lines = f.readlines()
-    lines = lines[:2000]
+    lines = lines[:50]
     total_num_paths = len(lines)
 
     write_dir = args.write_dir
@@ -222,6 +222,8 @@ def main(args):
     succeeded = len(all_metadata)
     print(
         f'Finished processing {succeeded}/{total_num_paths} files')
+
+    print(f'--[Only process proteins less than {args.max_len} in length.]--')
 
 
 if __name__ == "__main__":

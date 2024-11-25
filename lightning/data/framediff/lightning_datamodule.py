@@ -10,7 +10,6 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-# TODO Wrap LigntningDataModule into different methods
 
 class framediff_Lightning_Datamodule(pl.LightningDataModule):
     def __init__(self, conf):

@@ -40,21 +40,11 @@ class LMDB_Cache:
         def _get_list(idx):
             return list(map(lambda x: x[idx], result_tuples))
         self.chain_ftrs = _get_list(0)
-        self.gt_bb_rigid_vals = _get_list(1)
-        self.pdb_names = _get_list(2)
-        self.csv_rows = _get_list(3)
 
     def get_cache_csv_row(self, idx):
-        # if self.csv is not None:
-        #     # We are going to get the idx row out of the csv -> so we look for true index based on index cl
-        #     idx = self.csv.iloc[idx]["index"]
+        return self.chain_ftrs[idx]
 
-        return (
-            self.chain_ftrs[idx],
-            self.gt_bb_rigid_vals[idx],
-            self.pdb_names[idx],
-            self.csv_rows[idx],
-        )
+
 
 
 
@@ -73,24 +63,24 @@ class genie2_Dataset(data.Dataset):
         return len(self.csv)
 
     def __getitem__(self, idx):
-        chain_feats, gt_bb_rigid, pdb_name, csv_row = self.lmdb_cache.get_cache_csv_row(idx)
+        chain_feats = self.lmdb_cache.get_cache_csv_row(idx)
         aatype, atom_positions, chain_idx = \
             chain_feats['aatype'], chain_feats['bb_positions'], chain_feats['chain_idx']
         all_chain_idx = np.unique(chain_idx).tolist()
         lengths = [np.sum(chain_idx == x) for x in all_chain_idx]
         np_features = feat_utils.create_empty_np_features(lengths)
 
-        np_features['aatype'] = aatype.astype(int)
+        np_features['aatype'] = aatype.numpy()
         np_features['atom_positions'] = atom_positions.astype(float)
 
-        if np.random.random() <= self.motif_prob:
+        if np.random.random() <= self.data_conf.motif_prob:
             np_features = self._update_motif_masks(np_features)
 
         # Pad
         np_features = feat_utils.pad_np_features(
             np_features,
-            self.max_n_chain,
-            self.max_n_res
+            self.data_conf.max_n_chain,
+            self.data_conf.max_n_res
         )
 
         return np_features
@@ -147,14 +137,14 @@ class genie2_Dataset(data.Dataset):
 
         # Sample number of motif residues
         motif_n_res = np.random.randint(
-            np.floor(np_features['num_residues'] * self.motif_min_pct_res),
-            np.ceil(np_features['num_residues'] * self.motif_max_pct_res)
+            np.floor(np_features['num_residues'] * self.data_conf.motif_min_pct_res),
+            np.ceil(np_features['num_residues'] * self.data_conf.motif_max_pct_res)
         )
 
         # Sample number of motif segments
         motif_n_seg = np.random.randint(
-            self.motif_min_n_seg,
-            min(self.motif_max_n_seg, motif_n_res) + 1
+            self.data_conf.motif_min_n_seg,
+            min(self.data_conf.motif_max_n_seg, motif_n_res) + 1
         )
 
         # Sample motif segments
@@ -179,13 +169,3 @@ class genie2_Dataset(data.Dataset):
 
 
 
-
-
-
-
-
-
-if __name__ == '__main__':
-    config = OmegaConf.load("../../config/method/genie2.yaml")
-    lmdb = LMDB_Cache(config.dataset)
-    pass

@@ -50,7 +50,7 @@ parser.add_argument(
     '--max_len',
     help='Max length of protein.',
     type=int,
-    default=512)
+    default=256)
 parser.add_argument(
     '--num_processes',
     help='Number of processes.',
@@ -308,6 +308,8 @@ def main(args):
     succeeded = len(all_metadata)
     print(
         f'Finished processing {succeeded}/{total_num_paths} files')
+
+    print(f'--[Only process proteins less than {args.max_len} in length.]--')
 
 
 if __name__ == "__main__":
