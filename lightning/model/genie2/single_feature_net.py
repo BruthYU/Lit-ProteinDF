@@ -51,7 +51,7 @@ class SingleFeatureNet(nn.Module):
 
 		# Layer for final projection
 		self.linear = nn.Linear(
-			self.c_pos_emb + self.c_chain_emb + self.c_timestep_emb + 25 + 3,
+			self.c_pos_emb + self.c_chain_emb + self.c_timestep_emb + 21 + 3,
 			self.c_s, bias=False
 		)
 

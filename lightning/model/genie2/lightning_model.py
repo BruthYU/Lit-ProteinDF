@@ -26,7 +26,8 @@ class genie2_Lightning_Model(pl.LightningModule):
             max_n_chain=self.data_conf.max_n_chain
         )
 
-        self.setup_schedule()
+        # Flag for lazy setup and same device requirements
+        self.setup = False
 
     def setup_schedule(self):
         """
@@ -61,9 +62,14 @@ class genie2_Lightning_Model(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
+        # Perform setup in the first run
+        if not self.setup:
+            self.setup_schedule()
+            self.setup = True
+
+
         train_loss, aux_data = self.loss_fn(batch)
         self.log('train_loss', train_loss, on_step=True, on_epoch=True, prog_bar=True)
-
 
         batch_mask, condition_losses, infill_losses = \
             aux_data['batch_mask'], aux_data['condition_losses'], aux_data['infill_losses']
@@ -180,8 +186,7 @@ class genie2_Lightning_Model(pl.LightningModule):
             'batch_mask': batch_mask
         }
 
-
-        return weighted_loss, unweighted_loss, aux_data
+        return weighted_loss, aux_data
 
     def mse(self, x_pred, x, mask, aggregate=None, eps=1e-10):
         """
