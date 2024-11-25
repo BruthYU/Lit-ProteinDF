@@ -6,6 +6,7 @@ import tree
 import torch
 import numpy as np
 import lightning.data.genie2.feat_utils as feat_utils
+from preprocess.tools.residue_constants import restypes_with_x
 import pandas as pd
 import os
 import math
@@ -70,7 +71,9 @@ class genie2_Dataset(data.Dataset):
         lengths = [np.sum(chain_idx == x) for x in all_chain_idx]
         np_features = feat_utils.create_empty_np_features(lengths)
 
-        np_features['aatype'] = aatype.numpy()
+        aatype = aatype.numpy()
+
+        np_features['aatype'] = np.eye(len(restypes_with_x))[aatype]
         np_features['atom_positions'] = atom_positions.astype(float)
 
         if np.random.random() <= self.data_conf.motif_prob:
