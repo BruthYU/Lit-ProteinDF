@@ -11,14 +11,14 @@ class MultiProcessor(ABC):
 	"""
 
 	@abstractmethod
-	def create_tasks(self, params):
+	def create_tasks(self, infer_conf):
 		"""
 		Define a list of tasks to be distributed across processes, where each 
 		task is defiend as a dictionary of task-specific parameters.
 
 		Args:
-			params:
-				A dictionary of parameters.
+			infer_conf:
+				An OmegaConf of parameters.
 
 		Returns:
 			A list of tasks, where each task is defiend as a dictionary of 
@@ -27,13 +27,13 @@ class MultiProcessor(ABC):
 		raise NotImplemented
 
 	@abstractmethod
-	def create_constants(self, params):
+	def create_constants(self, infer_conf):
 		"""
 		Define a dictionary of constants shared across processes.
 
 		Args:
-			params:
-				A dictionary of parameters.
+			infer_conf:
+				An OmegaConf of parameters.
 
 		Returns:
 			A dictionary of constants shared across processes.
@@ -47,7 +47,7 @@ class MultiProcessor(ABC):
 
 		Args:
 			constants:
-				A dictionary of constants.
+				An OmegaConf of constants.
 			tasks:
 				A list of tasks, where each task is defiend as a dictionary 
 				of task-specific parameters.
@@ -56,13 +56,13 @@ class MultiProcessor(ABC):
 		"""
 		raise NotImplemented
 
-	def run(self, params, num_devices, sequential_order=False):
+	def run(self, infer_conf, num_devices, sequential_order=False):
 		"""
 		Run in parallel based on input parameters/configurations.
 
 		Args:
-			params:
-				A dictionary of parameters/configurations.
+			infer_conf:
+				An OmegaConf of parameters/configurations.
 			num_devices:
 				Number of GPUs availble.
 			sequential_order:
@@ -71,14 +71,16 @@ class MultiProcessor(ABC):
 
 
 		# Create tasks
-		tasks = self.create_tasks(params)
+		tasks = self.create_tasks(infer_conf)
+
+
 
 		# Balance load of devices
 		if num_devices > 1 and not sequential_order:
 			random.shuffle(tasks)
 
 		# Create constants
-		constants = self.create_constants(params)
+		constants = self.create_constants(infer_conf)
 
 		# Start parallel processes
 		processes = []

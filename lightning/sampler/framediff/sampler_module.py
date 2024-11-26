@@ -26,16 +26,14 @@ from preprocess.tools import all_atom
 
 
 class framediff_Sampler:
-    def __init__(self, conf: DictConfig, is_training=False):
+    def __init__(self, conf: DictConfig):
 
         self.inference_ready = False
-        self.is_training = is_training
+
         self.conf = conf
         self.infer_conf = conf.inference
         self.diff_conf = self.infer_conf.diffusion
         self.sample_conf = self.infer_conf.samples
-        self.data_conf = self.conf.dataset
-        self.model_conf = self.conf.model
         self.log = logging.getLogger(__name__)
         self.output_dir = self.infer_conf.output_dir
 
@@ -56,20 +54,12 @@ class framediff_Sampler:
         # Load model from checkpoint
         self._rng = np.random.default_rng(self.infer_conf.seed)
         self.inference_ckpt = self.infer_conf.weights_path
-        if is_training:
-            # Empty model
-            self.lightning_model = framediff_Lightning_Model.load_from_checkpoint(conf)
-        else:
-            # Load from Checkpoint
-            self.inference_ready = True
-            self.lightning_model = framediff_Lightning_Model.load_from_checkpoint(self.inference_ckpt)
 
-
-    def set_model(self, diffuser, model):
-        assert self.is_training, "Model in Sampler can only be changed during training for validation."
-        self.lightning_model.diffuser = diffuser
-        self.lightning_model.model = model
+        # Load from Checkpoint
         self.inference_ready = True
+        self.lightning_model = framediff_Lightning_Model.load_from_checkpoint(self.inference_ckpt)
+
+
 
 
 

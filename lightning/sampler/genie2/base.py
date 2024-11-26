@@ -28,7 +28,7 @@ class BaseSampler(ABC):
 		self.device = model.device
 
 		# Define required parameters
-		self.required = ['scale', 'outdir', 'num_samples', 'prefix', 'offset']
+		self.required = ['scale', 'output_dir', 'num_samples', 'prefix', 'offset']
 
 		# Set up diffusion schedule parameters
 		self.model.setup_schedule()
@@ -53,7 +53,7 @@ class BaseSampler(ABC):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -71,7 +71,7 @@ class BaseSampler(ABC):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -89,7 +89,7 @@ class BaseSampler(ABC):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -140,7 +140,7 @@ class BaseSampler(ABC):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -159,7 +159,7 @@ class BaseSampler(ABC):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -218,7 +218,7 @@ class BaseSampler(ABC):
 		ts = T(rots, trans)
 
 		# Define steps
-		steps = reversed(np.arange(1, self.model.config.diffusion['n_timestep'] + 1))
+		steps = reversed(np.arange(1, self.model.diff_conf.n_timestep + 1))
 
 		# Iterate
 		for step in steps:
@@ -296,7 +296,7 @@ class BaseSampler(ABC):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches

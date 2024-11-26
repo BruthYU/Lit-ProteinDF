@@ -6,9 +6,9 @@ defaults:
 
 hydra:
   run:
-    dir: ./hydra_inference/${now:%Y-%m-%d_%H-%M-%S}
+    dir: ./hydra_inference/${now:%Y-%m-%d_%H-%M-%S}_${method_name}
   sweep:
-    dir: ./hydra_inference/${now:%Y-%m-%d_%H-%M-%S}
+    dir: ./hydra_inference/${now:%Y-%m-%d_%H-%M-%S}_${method_name}
     subdir: ${hydra.job.num}
   job:
     chdir: True

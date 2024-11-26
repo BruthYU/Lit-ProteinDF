@@ -36,16 +36,16 @@ class ScaffoldSampler(BaseSampler):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
 					-	filepath: path to the PDB file of motif configuration.
 		"""
-		pdbs_dir = os.path.join(params['outdir'], 'pdbs')
+		pdbs_dir = os.path.join(params['output_dir'], 'pdbs')
 		if not os.path.exists(pdbs_dir):
 			os.makedirs(pdbs_dir)
-		motif_pdbs_dir = os.path.join(params['outdir'], 'motif_pdbs')
+		motif_pdbs_dir = os.path.join(params['output_dir'], 'motif_pdbs')
 		if not os.path.exists(motif_pdbs_dir):
 			os.makedirs(motif_pdbs_dir)
 
@@ -58,7 +58,7 @@ class ScaffoldSampler(BaseSampler):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -108,7 +108,7 @@ class ScaffoldSampler(BaseSampler):
 			params:
 				A dictionary of sampling parameters. Required parameters include
 					-	scale: sampling noise scale
-					-	outdir: output directory
+					-	output_dir: output directory
 					-	num_samples: number of samples to generate (in a batch)
 					-	prefix: prefix for filenames of generated structures
 					-	offset: offset for distinguishing between batches
@@ -152,14 +152,14 @@ class ScaffoldSampler(BaseSampler):
 			
 			# Save pdb
 			output_pdb_filepath = os.path.join(
-				params['outdir'], 'pdbs', 
+				params['output_dir'], 'pdbs', 
 				'{}.pdb'.format(name)
 			)
 			save_np_features_to_pdb(np_features, output_pdb_filepath)
 
 			# Save motif pdb
 			output_motif_pdb_filepath = os.path.join(
-				params['outdir'], 'motif_pdbs',
+				params['output_dir'], 'motif_pdbs',
 				'{}.pdb'.format(name)
 			)
 			save_motif_pdb(

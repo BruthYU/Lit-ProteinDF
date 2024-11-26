@@ -67,3 +67,23 @@ experiment:
   condition_loss_weight: 1
   lr: 0.0001
   lr_scheduler: null
+
+inference:
+  task_type: unconditional # scaffold
+  weights_path: ${hydra:runtime.cwd}/src/framediff/last.ckpt
+  output_dir: ./genie2_outputs/
+  num_samples: 1 # number of samples per task
+  batch_size: 4 # number of tasks in a batch
+  scale: null # Sampling noise scale
+
+  # scaffold specific configuration
+  strength: null
+  datadir: ${hydra:runtime.cwd}/src/genie2/design25
+
+
+
+
+
+
+
+

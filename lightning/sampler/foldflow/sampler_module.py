@@ -28,10 +28,8 @@ import logging
 
 
 class foldflow_Sampler:
-    def __init__(self, conf: DictConfig, is_training=False):
+    def __init__(self, conf: DictConfig):
 
-
-        self.is_training = is_training
         self.conf = conf
         self.infer_conf = conf.inference
         self.fm_conf = self.infer_conf.flow
