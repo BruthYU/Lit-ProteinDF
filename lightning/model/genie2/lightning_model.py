@@ -13,6 +13,7 @@ from lightning.data.genie2.feat_utils import prepare_tensor_features
 class genie2_Lightning_Model(pl.LightningModule):
     def __init__(self, conf):
         super().__init__()
+        self.save_hyperparameters()
         self.conf = conf
         self.model_conf = conf.model
         self.data_conf = conf.dataset

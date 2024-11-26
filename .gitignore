@@ -10,3 +10,4 @@ evaluate/eval_data
 /lightning/hydra_inference/
 /lightning/ckpts/
 /.sync.ffs_db
+/lightning/src/
