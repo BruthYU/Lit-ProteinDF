@@ -5,8 +5,9 @@
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](https://opensource.org/licenses/MIT)
-![Static Badge](https://img.shields.io/badge/last_commit-Nov-blue)
-![](https://img.shields.io/badge/PRs-Welcome-yellow)
+![Static Badge](https://img.shields.io/badge/Pytorch-Lightning-yellow)
+![Static Badge](https://img.shields.io/badge/Config-Hydra-blue)
+![](https://img.shields.io/badge/PRs-Welcome-green)
 ![GitHub Repo stars](https://img.shields.io/github/stars/BruthYU/Lit-ProteinDF?style=social)
 </div>
 
