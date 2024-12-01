@@ -31,7 +31,7 @@ The first step of preprocessing is to place raw protein files into `raw` folder 
 │   │   ├── 12as.pdb
 │   │   └── 132l.pdb
 ```
-Then you can run: 
+Then you can run (the `max_len` arg takes effect here filter proteins according to length): 
 
 ```
 python process_pdb_dataset.py 
@@ -67,7 +67,7 @@ python build_cache.py
 ```
 
 
-Specifically, the customized conditions can be modified in `preprocess/conig.yaml`. The generated lmdb cache are organized as:
+Specifically, the customized conditions can be modified in `preprocess/config.yaml`. The generated lmdb cache are organized as:
 ```
 .cache
 ├── pdb
