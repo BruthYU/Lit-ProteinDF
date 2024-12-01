@@ -259,7 +259,7 @@ class BuildCache:
         # Initialize local cache with lmdb
         self._local_cache = lmdb.open(
             self.cache_path, map_size=(1024**3) * 5
-        )  # 1GB * 13
+        )  # 1GB * 5
 
         st_time = time.time()
 
