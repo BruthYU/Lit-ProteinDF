@@ -53,7 +53,7 @@ All preprocess operations (i.e. how pdb files map to the lmdb cache) are impleme
 
 </details>
 
-### How to Train and Inference
+### How to Training and Inference
 <details>
 </details>
 
