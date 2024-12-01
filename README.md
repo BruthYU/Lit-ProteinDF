@@ -36,9 +36,11 @@ pip install -r requirements.txt
 In this section we will demonstrate how to use Lit-ProteinDF.
 
 ---
-### Preprocess Dataset and Build Cache
-Lit-ProteinDF featurizes proteins using the [Alphafold Protein Data Type](https://github.com/google-deepmind/alphafold/blob/d95a92aae161240b645fc10e9d030443011d913e/alphafold/common/protein.py), and build `lmdb` cache following [FoldFlow](https://github.com/DreamFold/FoldFlow/blob/20abc40dc241bbed408c5aa35a2a39b7778d6372/foldflow/data/pdb_data_loader.py#L323).
-In this way, different protein data files (`mmcif, pdb and jsonl`) are unifed into one data type, and the built cache could be loaded for all integrated methods during training.
+### How to Preprocess Dataset and Build Cache
+<details>
+
+Lit-ProteinDF featurizes proteins with the [Alphafold Protein Data Type](https://github.com/google-deepmind/alphafold/blob/d95a92aae161240b645fc10e9d030443011d913e/alphafold/common/protein.py), and build `lmdb` cache following the [FoldFlow](https://github.com/DreamFold/FoldFlow/blob/20abc40dc241bbed408c5aa35a2a39b7778d6372/foldflow/data/pdb_data_loader.py#L323) method.
+In this way, different protein files (`mmcif, pdb and jsonl`) are unifed into one data type, and the built cache could be loaded for all integrated methods during training.
 ```sh
 python preprocess/process_pdb_dataset.py
 # Intermediate pickle files are generated.
@@ -47,4 +49,14 @@ python preprocess/build_cache.py
 ```
 All preprocess operations (i.e. how pdb files map to the lmdb cache) are implemented in the folder `Lit-ProteinDF/preprocess`. Please refer to this [README.md](preprocess/README.md) for more details and instructions. 
 
-**You can directly download our preprocessed cache**: [Coming Soon]
+**You can also directly download our preprocessed dataset**: [Coming Soon]
+
+</details>
+
+### How to Train and Inference
+<details>
+</details>
+
+### How to Evaluate Performance
+<details>
+</details>
