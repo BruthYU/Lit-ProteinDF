@@ -61,7 +61,7 @@ python preprocess/build_cache.py
 
 Training and inference of all integrated methods are implemented in the lightning workspace (`Lit-ProteinDF\lightning`). You can refer to this  [README.md](lightning/README.md) for more details.
 
-Here we briefly describe each specific folder in the lightning workspace:
+Here we briefly describe the functionality of each folder in the lightning workspace:
 
 1. `lightning/config`: Lit-ProteinDF manages complex configuration with the [hydra](https://github.com/facebookresearch/hydra) framework. 
 This folder contains default settings for training and inference of integrated methods   .
@@ -72,6 +72,6 @@ This folder contains default settings for training and inference of integrated m
 
 </details>
 
-### How to Evaluate Performance
+### How to Evaluate Different Methods
 <details>
 </details>
