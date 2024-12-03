@@ -137,6 +137,7 @@ and task files for motif scaffolding):
     |:-------------------|:----------:|:--------:|:------:|:---------:|:-----------:|
     | Unconditional Gen. |    ✅       |     ✅   |   ✅    |     ✅     |      ✅      |
     | Motif Scaffolding  |            |          |   ✅    |     ✅     |      ✅     |
+
     For unconditional generatoin, after defining your task configurations (such as protein lengths), you can simply run:
     ```shell
     python main_inference.py
