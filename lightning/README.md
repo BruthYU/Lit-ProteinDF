@@ -1,5 +1,5 @@
 # Lightning Workspace
-Main workspace of Lit-ProteinDF, which contains the training and inference implementations of 
+Main workspace of Lit-ProteinDF, which contains the Lightning⚡ implementations of collective
 **Protein Structure Generation Diffusion Models**. 
 
 ## Folders and Files
@@ -69,4 +69,45 @@ are required (`{}_Sampler`).
 </details>
 
 ## Tutorials
+Following example shows you how to run training and inference with Lit-ProteinDF.
+
+---
+### Training
+- **Step 1: Configure Diffusion Model.** Lit-ProteinDF currently supports *FrameDiff*, *FoldFLow*, *Genie2*,
+*FrameFlow* and *RFDiffusion*. You can choose a protein diffusion method (e.g. *Genie2*) by setting `config/train.yaml` as:
+   ```yaml
+   defaults:
+     - method: genie2
+   ```
+  Detailed configurations of each specific method are placed in folder `config/method`, You can modify it as needed.
+- **Step 2: Run Training.** `lightning/main_train.py` is the main script for training. As configurations defined 
+in **Step 1** are managed with [hydra](https://github.com/facebookresearch/hydra) framework, you can simply run training with
+    ```shell
+    CUDA_VISIBLE_DEVICES=0,1 python main_train.py
+    ```
+  In this file, you can configure things about training, such as whether to use [WandB](https://wandb.ai/site/) to supervise training,
+or which visible GPUs are used. With our careful encapsulation based on Pytorch Lightning⚡, distributed training and evaluation will be automatically
+implemented.
+- **Step 3: Training Process.** We use [hydra](https://github.com/facebookresearch/hydra) to create a directory for each run to store
+outputs during training (such as checkpoints and evaluation results):
+    ```yaml
+    # config/traing.yaml
+    hydra:
+      run:
+        dir: ./hydra_train/${now:%Y-%m-%d_%H-%M-%S}_${method_name}
+      job:
+        chdir: True
+    ```
+  The created output directories are like:
+    ```
+    ├── hydra_inference
+    │         ├── 2024-11-26_20-08-24_genie2
+    │         ├── 2024-11-26_20-09-11_genie2
+    ```
+  
+---
+### Inference
+  
+  
+
 

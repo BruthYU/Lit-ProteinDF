@@ -2,8 +2,6 @@ defaults:
   - method: genie2
 
 
-
-
 hydra:
   run:
     dir: ./hydra_train/${now:%Y-%m-%d_%H-%M-%S}_${method_name}
