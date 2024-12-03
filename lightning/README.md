@@ -80,14 +80,12 @@ Following example shows you how to run training and inference with Lit-ProteinDF
      - method: genie2
    ```
   Detailed configurations of each specific method are placed in folder `config/method`, You can modify it as needed.
-- **Step 2: Run Training.** `lightning/main_train.py` is the main script for training. As configurations defined 
-in **Step 1** are managed with [hydra](https://github.com/facebookresearch/hydra) framework, you can simply run training with
+- **Step 2: Run Training.** `lightning/main_train.py` is the main script for training. As configurations are managed with [hydra](https://github.com/facebookresearch/hydra) framework, you can simply run training with
     ```shell
     CUDA_VISIBLE_DEVICES=0,1 python main_train.py
     ```
-  In this file, you can configure things about training, such as whether to use [WandB](https://wandb.ai/site/) to supervise training,
-or which visible GPUs are used. With our careful encapsulation based on Pytorch Lightning⚡, distributed training and evaluation will be automatically
-implemented.
+  In `lightning/main_train.py`, you can configure things about training, such as whether to use [WandB](https://wandb.ai/site/) to supervise training,
+or which visible GPUs are used. With our careful implementation based on Pytorch Lightning⚡, distributed training and evaluation will run automatically.
 - **Step 3: Training Process.** We use [hydra](https://github.com/facebookresearch/hydra) to create a directory for each run to store
 outputs during training (such as checkpoints and evaluation results):
     ```yaml
