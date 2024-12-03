@@ -69,7 +69,7 @@ are required (`{}_Sampler`).
 </details>
 
 ## Tutorials
-Following example shows you how to run training and inference with Lit-ProteinDF.
+Following instructions show you how to run training and inference with Lit-ProteinDF.
 
 ---
 ### Training
@@ -96,16 +96,57 @@ outputs during training (such as checkpoints and evaluation results):
       job:
         chdir: True
     ```
-  The created output directories are like:
+  The created output directories during training will be like:
     ```
-    ├── hydra_inference
+    ├── hydra_train
     │         ├── 2024-11-26_20-08-24_genie2
     │         ├── 2024-11-26_20-09-11_genie2
     ```
   
 ---
 ### Inference
-  
-  
+- **Create Resource Directory:** Before inference, you need to create a folder `lightning/src` to place resources for inference (such as pre-trained checkpoints 
+and task files for motif scaffolding):
+    ```text
+    lightning/src
+    └── genie2
+        ├── design25
+        └── last.ckpt
+    ```
 
+- **Configure Diffusion Model:** You should first choose a pre-trained protein diffusion (e.g. *FoldFlow*) model in `config/inference.yaml` as:
+   ```yaml
+   defaults:
+     - method: foldflow
+   ```
+  Import configurations in `config/method/foldflow.yaml` to perform inference with *FoldFLow*:
+   ```yaml
+   inference:
+     weights_path: ${hydra:runtime.cwd}/src/foldflow/last.ckpt # Path to model weights.
+     output_dir: ./foldflow_outputs # Inference Output directory 
+   ```
+  The created folder for inference output will be like: 
+    ```
+    ├── hydra_inference
+    │         ├── 2024-11-26_20-08-24_foldflow
+    │         │   ├── foldflow_outputs
+    ```
+- **Task Type:** The types of tasks supported by different methods are listed as follows:
+    
+    | **Task**           | FrameDiff  | FoldFlow | Genie2 | FrameFlow | RFDiffusion |
+    |:-------------------|:----------:|:--------:|:------:|:---------:|:-----------:|
+    | Unconditional Gen. |    ✅       |     ✅   |   ✅    |     ✅     |      ✅      |
+    | Motif Scaffolding  |            |          |   ✅    |     ✅     |      ✅     |
+    For unconditional generatoin, after defining your task configurations (such as protein lengths), you can simply run:
+    ```shell
+    python main_inference.py
+    ```
+    For methods supporting motif scaffolding (e.g. *Genie2*), you should first determine the task type in
+`conifg/mehtod/genie2.yaml` as:
+    ```yaml
+   inference:
+   task_type: scaffold # scaffold 
+    ```
+   Please refer to each original repo to see the [Format of Motif Scaffolding Problem Definition File](https://github.com/aqlaboratory/genie2/blob/9a954578f7b5a39552545eebc6d4794447794c87/README.md?plain=1#L135).
+  
 

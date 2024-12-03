@@ -148,7 +148,7 @@ inference:
   name: null
   gpu_id: 0  # CUDA GPU to use
   seed: 123
-  full_ckpt_dir: ./ckpt_dir/inference/baseline/
+
 
   # Directory of software, weights, and outputs.
   pt_hub_dir: ${hydra:runtime.cwd}/src/torch/
