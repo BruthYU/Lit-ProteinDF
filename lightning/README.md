@@ -102,7 +102,13 @@ outputs during training (such as checkpoints and evaluation results):
     │         ├── 2024-11-26_20-08-24_genie2
     │         ├── 2024-11-26_20-09-11_genie2
     ```
-  
+- **Resume Training from Checkpoint:** If you want to resume training state from checkpoint (*Genie2* for example), set the `resume_from_ckpt` and `resume_ckpt_path` in
+`config/method/genie2.yaml` as:
+    ```yaml
+    model:
+      resume_from_ckpt: True
+      resume_ckpt_path: {your-path-to-checkpint}
+    ```
 ---
 ### Inference
 - **Create Resource Directory:** Before inference, you need to create a folder `lightning/src` to place resources for inference (such as pre-trained checkpoints 
