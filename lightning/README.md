@@ -152,7 +152,7 @@ and task files for motif scaffolding):
 `conifg/mehtod/genie2.yaml` as:
     ```yaml
    inference:
-   task_type: scaffold # scaffold 
+      task_type: scaffold # scaffold 
     ```
    Please refer to each original repo to see the [Format of Motif Scaffolding Problem Definition File](https://github.com/aqlaboratory/genie2/blob/9a954578f7b5a39552545eebc6d4794447794c87/README.md?plain=1#L135).
   
