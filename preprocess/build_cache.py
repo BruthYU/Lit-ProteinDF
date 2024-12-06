@@ -129,6 +129,7 @@ def _process_csv_row(csv, processed_file_path):
         "residx_atom14_to_atom37": chain_feats["residx_atom14_to_atom37"],
         "residue_index": processed_feats["residue_index"],
         "res_mask": processed_feats["bb_mask"],
+        "b_factors": processed_feats["b_factors"],
         "bb_positions": processed_feats["bb_positions"],
         "atom37_pos": chain_feats["all_atom_positions"],
         "atom37_mask": chain_feats["all_atom_mask"],
