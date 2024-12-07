@@ -5,7 +5,7 @@ from torch.utils import data
 import tree
 import torch
 import numpy as np
-import lightning.data.framediff.dataloader as du
+
 from lightning.data.framediff import se3_diffuser
 import pandas as pd
 from evaluate.openfold.utils import rigid_utils

@@ -17,3 +17,4 @@ tmtools==0.0.2
 POT==0.9.4
 einops==0.6.0
 geomstats==2.7.0
+# pip install torch-scatter -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
