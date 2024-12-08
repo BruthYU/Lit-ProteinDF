@@ -1,5 +1,5 @@
 defaults:
-  - method: genie2
+  - method: framediff
 
 
 hydra:

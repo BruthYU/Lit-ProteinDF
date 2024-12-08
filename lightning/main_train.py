@@ -25,15 +25,6 @@ print(sys.path)
 LOG = logging.getLogger(__name__)
 
 
-class MethodCallback(Callback):
-    def __init__(self, method_name):
-        super().__init__()
-        self.method_name = method_name
-
-    def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        if self.method_name in ['framediff', 'foldflow']:
-            trainer.train_dataloader.sampler.set_epoch(pl_module.current_epoch)
-            trainer.val_dataloaders.sampler.set_epoch(pl_module.current_epoch)
 
 
 def load_callbacks(conf):
@@ -53,7 +44,7 @@ def load_callbacks(conf):
         callback_list.append(plc.LearningRateMonitor(
             logging_interval=None))
     # Epoch callback
-    callback_list.append(MethodCallback(conf.method_name))
+    # callback_list.append(MethodCallback(conf.method_name))
     return callback_list
 
 

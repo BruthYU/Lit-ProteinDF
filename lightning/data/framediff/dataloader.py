@@ -431,14 +431,15 @@ class NewDistributedSampler(data.Sampler):
 
         indices = indices[self.rank:self.total_size:self.num_replicas]
         assert len(indices) == self.num_samples
+
+        self.epoch += 1
         return iter(indices)
 
 
     def __len__(self) -> int:
         return self.num_samples
 
-    def set_epoch(self, epoch):
-        self.epoch = epoch
+
 
 
 
