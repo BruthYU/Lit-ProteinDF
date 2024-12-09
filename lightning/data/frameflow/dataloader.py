@@ -1,26 +1,9 @@
-import pickle
-import os
 import numpy as np
-from typing import List, Dict, Any
-import collections
-from omegaconf import OmegaConf
-import dataclasses
 from preprocess.tools import so3_utils, chemical, residue_constants, protein
-from evaluate.openfold.utils import rigid_utils
-from scipy.spatial.transform import Rotation
-from Bio import PDB
-from Bio.PDB.Chain import Chain
-import string
-import io
-import gzip
-from torch.utils import data
 import torch
 import logging
-import random
 import torch.distributed as dist
 import math
-from typing import Optional
-from torch.utils.data.distributed import DistributedSampler
 Protein = protein.Protein
 import warnings
 

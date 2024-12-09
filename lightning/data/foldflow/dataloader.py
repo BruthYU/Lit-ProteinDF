@@ -1,8 +1,7 @@
 
-import io
-import pickle
+
 import string
-import os
+
 
 import numpy as np
 import torch
@@ -14,10 +13,7 @@ from preprocess.tools import residue_constants
 from evaluate.openfold.utils import rigid_utils
 from typing import Dict, List, Tuple, Union, Any
 from typing import Any, Optional
-from Bio import PDB
-from Bio.PDB.Chain import Chain
-import dataclasses
-from preprocess.tools.protein import Protein
+
 import logging
 import random
 # Global map from chain characters to integers.
