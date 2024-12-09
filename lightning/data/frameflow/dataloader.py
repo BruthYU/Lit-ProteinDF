@@ -34,9 +34,7 @@ def _read_clusters(cluster_path):
     return pdb_to_cluster
 
 
-
-
-class NewBatcherSampler:
+class NewBatchSampler:
 
     def __init__(
             self,
