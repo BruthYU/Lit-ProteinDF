@@ -37,6 +37,16 @@ def _add_plddt_mask(feats, plddt_threshold):
     feats['plddt_mask'] = torch.tensor(
         feats['res_plddt'] > plddt_threshold).int()
 
+def _read_clusters(cluster_path):
+    pdb_to_cluster = {}
+    with open(cluster_path, "r") as f:
+        for i,line in enumerate(f):
+            for chain in line.split(' '):
+                pdb = chain.split('_')[0]
+                pdb_to_cluster[pdb.upper()] = i
+    return pdb_to_cluster
+
+
 
 class LMDB_Cache:
     def __init__(self, data_conf):
@@ -97,6 +107,22 @@ class frameflow_Dataset(data.Dataset):
         self.is_training = is_training
         self.diffuser = se3_diffuser.SE3Diffuser(frame_conf)
         self._rng = np.random.default_rng(seed=self.data_conf.seed)
+
+        self._pdb_to_cluster = _read_clusters(self.data_conf.cluster_path)
+        self._max_cluster = max(self._pdb_to_cluster.values())
+        self._missing_pdbs = 0
+
+        def cluster_lookup(pdb):
+            pdb = pdb.upper()
+            if pdb not in self._pdb_to_cluster:
+                self._pdb_to_cluster[pdb] = self._max_cluster + 1
+                self._max_cluster += 1
+                self._missing_pdbs += 1
+            return self._pdb_to_cluster[pdb]
+        self.csv['cluster'] = self.csv['pdb_name'].map(cluster_lookup)
+        self._all_clusters = dict(
+            enumerate(self.csv['cluster'].unique().tolist()))
+        self._num_clusters = len(self._all_clusters)
 
     def process_chain_feats(self, chain_feats):
         return _process_chain_feats(chain_feats)
@@ -191,7 +217,7 @@ class frameflow_Dataset(data.Dataset):
         feats['diffuse_mask'] = feats['diffuse_mask'].int()
 
         # Storing the csv index is helpful for debugging.
-        feats['csv_idx'] = torch.ones(1, dtype=torch.long) * idx
+        feats['lmdbIndex'] = torch.ones(1, dtype=torch.long) * idx
         return feats
 
 
