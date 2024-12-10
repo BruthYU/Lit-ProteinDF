@@ -2,9 +2,10 @@
 method_name: frameflow
 dataset:
   cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
-  cluster_path: ${hydra:runtime.cwd}/data/framediff/clusters-by-entity-30.txt
+  cluster_path: ${hydra:runtime.cwd}/data/clusters-by-entity-30.txt
   # Available tasks: hallucination, inpainting
   task: hallucination
+  seed: 123
   # Available tasks: pdb, scope
   dataset: pdb
   loader:
@@ -62,7 +63,7 @@ model:
 
 experiment:
   debug: False
-  seed: 123
+  seed: ${dataset.seed}
   num_devices: 2
   warm_start: null
   warm_start_cfg_override: True
@@ -77,6 +78,7 @@ experiment:
     aux_loss_use_bb_loss: True
     aux_loss_use_pair_loss: True
     aux_loss_t_pass: 0.5
+  use_wandb: False
   wandb:
     name: ${data.task}_${data.dataset}
     project: se3-fm

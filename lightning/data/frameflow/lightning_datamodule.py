@@ -14,6 +14,8 @@ LOG = logging.getLogger(__name__)
 class frameflow_Lightning_Datamodule(pl.LightningDataModule):
     def __init__(self, conf):
         super().__init__()
+        self.save_hyperparameters()
+        self.conf = conf
         self.data_conf= conf.dataset
         self.method_name = conf.method_name
         self.data_module = self.init_data_module(self.method_name)
@@ -26,11 +28,11 @@ class frameflow_Lightning_Datamodule(pl.LightningDataModule):
         if stage == 'fit' or stage is None:
             self.lmdb_cache = self.instancialize_module(module=self.cache_module, data_conf=self.data_conf)
             '''Train Dataset & Sampler'''
-            self.trainset = self.instancialize_module(module=self.data_module, lmdb_cache=self.lmdb_cache,
+            self.trainset = self.instancialize_module(module=self.data_module, task = self.data_conf.task, lmdb_cache=self.lmdb_cache,
                                                       is_training=True, data_conf=self.data_conf)
 
             '''Valid Dataset & Sampler'''
-            self.valset = self.instancialize_module(module=self.data_module, lmdb_cache=self.lmdb_cache,
+            self.valset = self.instancialize_module(module=self.data_module, task = self.data_conf.task, lmdb_cache=self.lmdb_cache,
                                                     is_training=False, data_conf=self.data_conf)
 
     def train_dataloader(self, rank=None, num_replicas=None):
