@@ -1,3 +1,5 @@
+# @package _global_
+method_name: frameflow
 dataset:
   cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
   cluster_path: ${hydra:runtime.cwd}/data/framediff/clusters-by-entity-30.txt

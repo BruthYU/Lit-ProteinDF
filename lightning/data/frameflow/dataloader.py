@@ -52,7 +52,7 @@ class NewBatchSampler:
         self.seed = seed
         self.shuffle = shuffle
         self.epoch = 0
-        self.max_batch_size =  self._data_conf.max_batch_size
+        self.max_batch_size =  self._data_conf.sampler.max_batch_size
         self._log.info(f'Created dataloader rank {self.rank+1} out of {self.num_replicas}')
 
     def get_num_batches(self):
@@ -101,7 +101,7 @@ class NewBatchSampler:
         for seq_len, len_df in replica_csv.groupby('modeled_seq_len'):
             max_batch_size = min(
                 self.max_batch_size,
-                self._data_conf.max_num_res_squared // seq_len ** 2 + 1,
+                self._data_conf.sampler.max_num_res_squared // seq_len ** 2 + 1,
             )
             num_batches = math.ceil(len(len_df) / max_batch_size)
             for i in range(num_batches):

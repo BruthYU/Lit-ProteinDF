@@ -96,8 +96,7 @@ class frameflow_Dataset(data.Dataset):
                  lmdb_cache,
                  task,
                  data_conf = None,
-                 frame_conf = None,
-                 is_training= True):
+                 is_training = True):
         super().__init__()
         assert lmdb_cache, "No cache to build dataset."
         self.lmdb_cache = lmdb_cache
@@ -105,7 +104,7 @@ class frameflow_Dataset(data.Dataset):
         self.task = task
         self.data_conf = data_conf
         self.is_training = is_training
-        self.diffuser = se3_diffuser.SE3Diffuser(frame_conf)
+
         self._rng = np.random.default_rng(seed=self.data_conf.seed)
 
         self._pdb_to_cluster = _read_clusters(self.data_conf.cluster_path)
