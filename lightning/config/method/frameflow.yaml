@@ -62,6 +62,7 @@ model:
 
 
 experiment:
+  train_sample_mode: cluster_length_batch
   debug: False
   seed: ${dataset.seed}
   num_devices: 2

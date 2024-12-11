@@ -18,6 +18,7 @@ class frameflow_Lightning_Datamodule(pl.LightningDataModule):
         self.conf = conf
         self.data_conf= conf.dataset
         self.method_name = conf.method_name
+        self.sample_mode = conf.experiment.train_sample_mode
         self.data_module = self.init_data_module(self.method_name)
         self.cache_module = self.init_cache_module(self.method_name)
         # import utils for to create dataloader
@@ -40,7 +41,8 @@ class frameflow_Lightning_Datamodule(pl.LightningDataModule):
         train_sampler = self.dataloader.NewBatchSampler(
             data_conf=self.data_conf,
             dataset=self.trainset,
-            is_training=True
+            is_training= True,
+            sample_mode= self.sample_mode
         )
         return DataLoader(
             self.trainset,
@@ -56,7 +58,8 @@ class frameflow_Lightning_Datamodule(pl.LightningDataModule):
         valid_sampler = self.dataloader.NewBatchSampler(
             data_conf=self.data_conf,
             dataset=self.trainset,
-            is_training=False
+            is_training=False,
+            sample_mode=None
         )
         return DataLoader(
             self.trainset,

@@ -28,7 +28,8 @@ class NewBatchSampler:
             shuffle=True,
             num_replicas=None,
             rank=None,
-            is_training = True
+            is_training = True,
+            sample_mode = "cluster_length_batch"
     ):
         super().__init__()
         self._log = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class NewBatchSampler:
         self._data_conf = data_conf
         self._data_csv = dataset.csv
         self._is_training = is_training
+        self._sample_mode = sample_mode
 
         # Each replica needs the same number of batches. We set the number
         # of batches to arbitrarily be the number of examples per replica.
@@ -59,7 +61,7 @@ class NewBatchSampler:
         # Each replica needs the same number of batches. We set the number
         # of batches to arbitrarily be the number of examples per replica.
         if self._is_training:
-            if 'cluster' in self._data_csv:
+            if 'cluster' in self._sample_mode:
                 num_batches = self._data_csv['cluster'].nunique()
             else:
                 num_batches = len(self._data_csv)
