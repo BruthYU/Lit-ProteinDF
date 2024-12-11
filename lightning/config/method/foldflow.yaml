@@ -80,8 +80,16 @@ model:
   axis_angle: ${flow_matcher.so3.axis_angle}
 
 experiment:
+  # Lightning Trainer Settings
   strategy: ddp
   use_distributed_sampler: False
+  num_epoch: 500
+  check_val_every_n_epoch: 1
+  use_wandb: False
+  ckpt_freq: 10
+  lr_scheduler: step
+
+
   # Experiment metadata
   seed: 111
   name: baseline
@@ -96,27 +104,23 @@ experiment:
   eval_batch_size: ${dataset.samples_per_eval_length}
   num_loader_workers: 12
   torch_num_threads: 8
-  num_epoch: 500
+
 
 
   # Optimizer and Scheduler
   learning_rate: 0.0001
-  lr_scheduler: step
   lr_decay_steps: 10_0000
   lr_decay_min_lr: 0.00008
   lr_decay_rate: 0.95
-
   max_squared_res: 500000
   prefetch_factor: 100
   use_gpu: True
   num_gpus: 1
   sample_mode: time_batch
 
-  # Wandb logging
-  use_wandb: False
 
-  # How many epochs to checkpoint between.
-  ckpt_freq: 10
+
+
 
   # Take early checkpoint at step 100. Helpful for catching eval bugs early.
   early_ckpt: True

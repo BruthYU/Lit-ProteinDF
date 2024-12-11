@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 import logging
 import torch.distributed as dist
-from pytorch_lightning import LightningModule
-from analysis import metrics
-from analysis import utils as au
+import pytorch_lightning as pl
+from .analysis import metrics
+from .analysis import utils as au
 from lightning.model.frameflow.flow_model import FlowModel
 from lightning.model.frameflow import utils as mu
 from lightning.data.frameflow.interpolant import Interpolant
@@ -22,21 +22,22 @@ from lightning.model.frameflow import utils_experiment as eu
 from pytorch_lightning.loggers.wandb import WandbLogger
 
 
-class FlowModule(LightningModule):
+class frameflow_Lightning_Model(pl.LightningModule):
 
-    def __init__(self, cfg):
+    def __init__(self, conf):
         super().__init__()
         self._print_logger = logging.getLogger(__name__)
-        self._exp_cfg = cfg.experiment
-        self._model_cfg = cfg.model
-        self._data_cfg = cfg.data
-        self._interpolant_cfg = cfg.interpolant
+        self.exp_conf = conf.experiment
+        self.model_conf = conf.model
+        self.data_conf = conf.dataset
+        self.interpolant_conf = conf.interpolant
+        self.infer_conf = conf.inference
 
         # Set-up vector field prediction model
-        self.model = FlowModel(cfg.model)
+        self.model = FlowModel(conf.model)
 
         # Set-up interpolant
-        self.interpolant = Interpolant(cfg.interpolant)
+        self.interpolant = Interpolant(conf.interpolant)
 
         self.validation_epoch_metrics = []
         self.validation_epoch_samples = []
@@ -50,13 +51,13 @@ class FlowModule(LightningModule):
         if self._checkpoint_dir is None:
             if dist.is_initialized():
                 if dist.get_rank() == 0:
-                    checkpoint_dir = [self._exp_cfg.checkpointer.dirpath]
+                    checkpoint_dir = [self.exp_conf.checkpointer.dirpath]
                 else:
                     checkpoint_dir = [None]
                 dist.broadcast_object_list(checkpoint_dir, src=0)
                 checkpoint_dir = checkpoint_dir[0]
             else:
-                checkpoint_dir = self._exp_cfg.checkpointer.dirpath
+                checkpoint_dir = self.exp_conf.checkpointer.dirpath
             self._checkpoint_dir = checkpoint_dir
             os.makedirs(self._checkpoint_dir, exist_ok=True)
         return self._checkpoint_dir
@@ -66,13 +67,13 @@ class FlowModule(LightningModule):
         if self._inference_dir is None:
             if dist.is_initialized():
                 if dist.get_rank() == 0:
-                    inference_dir = [self._exp_cfg.inference_dir]
+                    inference_dir = [self.exp_conf.inference_dir]
                 else:
                     inference_dir = [None]
                 dist.broadcast_object_list(inference_dir, src=0)
                 inference_dir = inference_dir[0]
             else:
-                inference_dir = self._exp_cfg.inference_dir
+                inference_dir = self.exp_conf.inference_dir
             self._inference_dir = inference_dir
             os.makedirs(self._inference_dir, exist_ok=True)
         return self._inference_dir
@@ -92,7 +93,7 @@ class FlowModule(LightningModule):
         self._epoch_start_time = time.time()
 
     def model_step(self, noisy_batch: Any):
-        training_cfg = self._exp_cfg.training
+        training_conf = self.exp_conf.training
         loss_mask = noisy_batch['res_mask'] * noisy_batch['diffuse_mask']
         if torch.any(torch.sum(loss_mask, dim=-1) < 1):
             raise ValueError('Empty batch encountered')
@@ -112,9 +113,9 @@ class FlowModule(LightningModule):
         r3_t = noisy_batch['r3_t']
         so3_t = noisy_batch['so3_t']
         r3_norm_scale = 1 - torch.min(
-            r3_t[..., None], torch.tensor(training_cfg.t_normalize_clip))
+            r3_t[..., None], torch.tensor(training_conf.t_normalize_clip))
         so3_norm_scale = 1 - torch.min(
-            so3_t[..., None], torch.tensor(training_cfg.t_normalize_clip))
+            so3_t[..., None], torch.tensor(training_conf.t_normalize_clip))
 
         # Model output predictions.
         model_output = self.model(noisy_batch)
@@ -126,8 +127,8 @@ class FlowModule(LightningModule):
 
         # Backbone atom loss
         pred_bb_atoms = all_atom.to_atom37(pred_trans_1, pred_rotmats_1)[:, :, :3]
-        gt_bb_atoms *= training_cfg.bb_atom_scale / r3_norm_scale[..., None]
-        pred_bb_atoms *= training_cfg.bb_atom_scale / r3_norm_scale[..., None]
+        gt_bb_atoms *= training_conf.bb_atom_scale / r3_norm_scale[..., None]
+        pred_bb_atoms *= training_conf.bb_atom_scale / r3_norm_scale[..., None]
         loss_denom = torch.sum(loss_mask, dim=-1) * 3
         bb_atom_loss = torch.sum(
             (gt_bb_atoms - pred_bb_atoms) ** 2 * loss_mask[..., None, None],
@@ -135,8 +136,8 @@ class FlowModule(LightningModule):
         ) / loss_denom
 
         # Translation VF loss
-        trans_error = (gt_trans_1 - pred_trans_1) / r3_norm_scale * training_cfg.trans_scale
-        trans_loss = training_cfg.translation_loss_weight * torch.sum(
+        trans_error = (gt_trans_1 - pred_trans_1) / r3_norm_scale * training_conf.trans_scale
+        trans_loss = training_conf.translation_loss_weight * torch.sum(
             trans_error ** 2 * loss_mask[..., None],
             dim=(-1, -2)
         ) / loss_denom
@@ -144,7 +145,7 @@ class FlowModule(LightningModule):
 
         # Rotation VF loss
         rots_vf_error = (gt_rot_vf - pred_rots_vf) / so3_norm_scale
-        rots_vf_loss = training_cfg.rotation_loss_weights * torch.sum(
+        rots_vf_loss = training_conf.rotation_loss_weights * torch.sum(
             rots_vf_error ** 2 * loss_mask[..., None],
             dim=(-1, -2)
         ) / loss_denom
@@ -173,14 +174,14 @@ class FlowModule(LightningModule):
 
         se3_vf_loss = trans_loss + rots_vf_loss
         auxiliary_loss = (
-                bb_atom_loss * training_cfg.aux_loss_use_bb_loss
-                + dist_mat_loss * training_cfg.aux_loss_use_pair_loss
+                bb_atom_loss * training_conf.aux_loss_use_bb_loss
+                + dist_mat_loss * training_conf.aux_loss_use_pair_loss
         )
         auxiliary_loss *= (
-                (r3_t[:, 0] > training_cfg.aux_loss_t_pass)
-                & (so3_t[:, 0] > training_cfg.aux_loss_t_pass)
+                (r3_t[:, 0] > training_conf.aux_loss_t_pass)
+                & (so3_t[:, 0] > training_conf.aux_loss_t_pass)
         )
-        auxiliary_loss *= self._exp_cfg.training.aux_loss_weight
+        auxiliary_loss *= self.exp_conf.training.aux_loss_weight
         auxiliary_loss = torch.clamp(auxiliary_loss, max=5)
 
         se3_vf_loss += auxiliary_loss
@@ -198,7 +199,7 @@ class FlowModule(LightningModule):
         self.interpolant.set_device(res_mask.device)
         num_batch, num_res = res_mask.shape
         diffuse_mask = batch['diffuse_mask']
-        csv_idx = batch['csv_idx']
+        lmdb_index = batch['lmdbIndex']
         atom37_traj, _, _ = self.interpolant.sample(
             num_batch,
             num_res,
@@ -214,7 +215,7 @@ class FlowModule(LightningModule):
         for i in range(num_batch):
             sample_dir = os.path.join(
                 self.checkpoint_dir,
-                f'sample_{csv_idx[i].item()}_idx_{batch_idx}_len_{num_res}'
+                f'sample_{lmdb_index[i].item()}_idx_{batch_idx}_len_{num_res}'
             )
             os.makedirs(sample_dir, exist_ok=True)
 
@@ -285,7 +286,7 @@ class FlowModule(LightningModule):
         step_start_time = time.time()
         self.interpolant.set_device(batch['res_mask'].device)
         noisy_batch = self.interpolant.corrupt_batch(batch)
-        if self._interpolant_cfg.self_condition and random.random() > 0.5:
+        if self.interpolant_conf.self_condition and random.random() > 0.5:
             with torch.no_grad():
                 model_sc = self.model(noisy_batch)
                 noisy_batch['trans_sc'] = (
@@ -348,13 +349,13 @@ class FlowModule(LightningModule):
     def configure_optimizers(self):
         return torch.optim.AdamW(
             params=self.model.parameters(),
-            **self._exp_cfg.optimizer
+            **self.exp_conf.optimizer
         )
 
     def predict_step(self, batch, batch_idx):
         del batch_idx  # Unused
         device = f'cuda:{torch.cuda.current_device()}'
-        interpolant = Interpolant(self._infer_cfg.interpolant)
+        interpolant = Interpolant(self.infer_conf.interpolant)
         interpolant.set_device(device)
 
         sample_ids = batch['sample_id'].squeeze().tolist()

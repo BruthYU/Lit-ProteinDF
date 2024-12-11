@@ -6,7 +6,7 @@ import random
 import GPUtil
 import numpy as np
 import pandas as pd
-from analysis import utils as au
+from .analysis import utils as au
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from lightning.data.frameflow.motif_scaffolding import save_motif_segments
 from evaluate.openfold.utils import rigid_utils as ru

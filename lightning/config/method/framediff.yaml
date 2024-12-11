@@ -64,8 +64,17 @@ model:
 
 
 experiment:
+  # Lightning Trainer Settings
   strategy: ddp_find_unused_parameters_true
   use_distributed_sampler: False
+  check_val_every_n_epoch: 4
+  num_epoch: 500
+  use_wandb: False
+  ckpt_freq: 10
+  lr_scheduler: step
+
+
+
   # Experiment metadata
   seed: 111
   name: baseline
@@ -78,7 +87,7 @@ experiment:
   batch_size: 8
   steps_per_epoch: null
   num_loader_workers: 5
-  num_epoch: 500_000
+
   weight_decay: 0
   max_squared_res: 500000
   prefetch_factor: 100
@@ -90,7 +99,7 @@ experiment:
 
   # Optimizer and Scheduler
   learning_rate: 0.0001
-  lr_scheduler: step
+
   lr_decay_steps: 10_0000
   lr_decay_min_lr: 0.00008
   lr_decay_rate: 0.95
@@ -98,11 +107,7 @@ experiment:
 
 
 
-  # Wandb logging
-  use_wandb: False
 
-  # How many epochs to checkpoint between.
-  ckpt_freq: 10
   # Take early checkpoint at step 100. Helpful for catching eval bugs early.
   early_ckpt: True
 

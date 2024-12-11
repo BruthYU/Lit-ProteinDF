@@ -28,6 +28,9 @@ dataset:
   max_motif_percent: 0.5
 
 model:
+  resume_from_ckpt: False
+  resume_ckpt_path: null
+
   node_embed_size: 256
   edge_embed_size: 128
   symmetric: False
@@ -62,6 +65,17 @@ model:
 
 
 experiment:
+  # Lightning Trainer Settings
+  strategy: ddp
+  num_epoch: 1000
+  check_val_every_n_epoch: 1
+  use_distributed_sampler: False
+  use_wandb: False
+  ckpt_freq: 10
+  lr_scheduler: null
+
+
+  # Experiment metadata
   train_sample_mode: cluster_length_batch
   debug: False
   seed: ${dataset.seed}
@@ -79,28 +93,12 @@ experiment:
     aux_loss_use_bb_loss: True
     aux_loss_use_pair_loss: True
     aux_loss_t_pass: 0.5
-  use_wandb: False
-  wandb:
-    name: ${data.task}_${data.dataset}
-    project: se3-fm
+
+
   optimizer:
     lr: 0.0001
-  trainer:
-    overfit_batches: 0
-    min_epochs: 1 # prevents early stopping
-    max_epochs: 1000
-    accelerator: gpu
-    log_every_n_steps: 1
-    deterministic: False
-    strategy: ddp
-    check_val_every_n_epoch: 4
-    accumulate_grad_batches: 2
-  checkpointer:
-    dirpath: ckpt/${experiment.wandb.project}/${experiment.wandb.name}/${now:%Y-%m-%d}_${now:%H-%M-%S}
-    save_last: True
-    save_top_k: 3
-    monitor: valid/non_coil_percent
-    mode: max
+
+
   # Keep this null. Will be populated at runtime.
   inference_dir: null
 
@@ -135,3 +133,86 @@ interpolant:
     do_sde: False
 
   self_condition: ${model.edge_features.self_condition}
+
+inference:
+
+  predict_dir: ./inference_outputs/
+  inference_subdir: run_${now:%Y-%m-%d}_${now:%H-%M-%S}
+
+  # Use this to write with date-time stamp.
+  name: run_${now:%Y-%m-%d}_${now:%H-%M}
+  seed: 123
+  task: unconditional
+  output_dir: inference_outputs/
+
+  # Choose checkpoint path
+  ckpt_path: null
+
+  use_gpu: True
+  num_gpus: 2
+
+  interpolant:
+    min_t: 1e-2
+    rots:
+      corrupt: True
+      sample_schedule: exp
+      exp_rate: 10
+    trans:
+      corrupt: True
+      sample_schedule: linear
+    sampling:
+      num_timesteps: 100
+    self_condition: True
+
+    twisting:
+      use: False  # set True when task is scaffolding guidance
+      t_min: 0.2
+      scale: 1.
+      # scale_w_t: ot
+      r_t: 1
+      potential_trans: True
+      potential_rot: True
+      update_trans: True
+      update_rot: True
+      max_rot_grad_norm: 1000
+      align: True
+      motif_loc: False
+      max_offsets: 1000
+      # num_rots: 100
+      num_rots: 1
+      # scale_rots: math.inf
+      scale_rots: 0.
+      # scale_rots: 0.1
+      obs_noise: 0.
+
+  samples:
+
+    # Number of backbone samples per sequence length.
+    samples_per_length: 10
+
+    # Minimum sequence length to sample.
+    min_length: 60
+
+    # Maximum sequence length to sample.
+    max_length: 128
+
+    # gap between lengths to sample. i.e. this script will sample all lengths
+    # in range(min_length, max_length, length_step)
+    length_step: 1
+
+    # Subset of lengths to sample. If null, sample all targets.
+    length_subset: [70, 100, 200, 300]
+
+    overwrite: False
+
+    # CSV path for scaffolding targets.
+    csv_path: motif_scaffolding/benchmark.csv
+
+    # Number of scaffolds to sample per target.
+    samples_per_target: 100
+
+    # Batch size when sampling from the model
+    num_batch: 1
+
+    # Subset of targets to scaffold.
+    target_subset: null  # e.g. ['5TPN']
