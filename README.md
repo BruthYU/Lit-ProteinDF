@@ -1,7 +1,7 @@
 <div align="center">
 
 
-## A Collection of Protein Structure Generation Diffusion Models based on Pytorch Lightning⚡.
+## A Collection of Diffusion Models for Protein Backbone Generation based on Pytorch Lightning⚡.
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](https://opensource.org/licenses/MIT)

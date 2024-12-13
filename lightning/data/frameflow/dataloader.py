@@ -115,8 +115,8 @@ class NewBatchSampler:
         # Remove any length bias (shuffle batch lists).
         new_order = torch.randperm(len(sample_order), generator=rng).numpy().tolist()
 
-        sampler_order = [sample_order[i] for i in new_order]
-        return sampler_order
+        sample_order = [sample_order[i] for i in new_order]
+        return sample_order
 
     def get_eval_sample_order(self):
         # filter proteins based on lengths
@@ -138,7 +138,7 @@ class NewBatchSampler:
 
         # csv on each replica
         if len(self._data_csv) > self.num_replicas:
-            replica_csv = eval_csv.iloc[
+            replica_csv = self._data_csv.iloc[
                 indices[self.rank::self.num_replicas]
             ]
         else:
@@ -167,11 +167,11 @@ class NewBatchSampler:
         # Make sure all replicas share the same seed on each epoch.
 
         if self._is_training:
-            sampler_order = self.get_train_sample_order()
+            sample_order = self.get_train_sample_order()
         else:
-            sampler_order = self.get_eval_sample_order()
+            sample_order = self.get_eval_sample_order()
 
-        return sampler_order
+        return sample_order
 
     def _create_batches(self):
         # Make sure all replicas have the same number of batches Otherwise leads to bugs.

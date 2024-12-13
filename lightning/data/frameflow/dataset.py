@@ -20,7 +20,7 @@ def _process_chain_feats(chain_feats):
     rotmats_1 = rigids_1.get_rots().get_rot_mats()
     trans_1 = rigids_1.get_trans()
     res_plddt = chain_feats['b_factors'][:, 1]
-    res_mask = torch.tensor(chain_feats['bb_mask']).int()
+    res_mask = torch.tensor(chain_feats['res_mask']).int()
 
     return {
         'res_plddt': res_plddt,
@@ -68,7 +68,9 @@ class LMDB_Cache:
         So we directly recover csv from the lmdb cache. 
         '''
         lmdb_series = [x[3] for x in result_tuples]
+
         self.csv = pd.DataFrame(lmdb_series).reset_index(drop=True)
+        self.csv = self.csv.reset_index()
         self.csv.to_csv("lmdb_protein.csv", index=True)
 
         def _get_list(idx):

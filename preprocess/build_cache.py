@@ -215,6 +215,7 @@ class BuildCache:
             pdb_csv = pdb_csv[: filter_conf.subset]
 
         pdb_csv = pdb_csv.sort_values("modeled_seq_len", ascending=False)
+        pdb_csv = pdb_csv.reset_index(drop=True)
         self._create_split(pdb_csv)
 
     def _create_split(self, pdb_csv):
