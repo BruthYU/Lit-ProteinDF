@@ -44,7 +44,7 @@ class Interpolant:
         if self._igso3 is None:
             sigma_grid = torch.linspace(0.1, 1.5, 1000)
             self._igso3 = so3_utils.SampleIGSO3(
-                1000, sigma_grid, cache_dir='.cache')
+                1000, sigma_grid, cache_dir=self._cfg.cache_dir)
         return self._igso3
 
     def set_device(self, device):

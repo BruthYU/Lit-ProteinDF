@@ -4,7 +4,7 @@ from preprocess.tools import residue_constants
 from evaluate.openfold.utils import rigid_utils as ru
 from evaluate.openfold.data import data_transforms
 from evaluate.openfold.utils import feats
-
+from lightning.data.frameflow.utils import adjust_oxygen_pos
 
 Rigid = ru.Rigid
 Rotation = ru.Rotation
@@ -17,6 +17,17 @@ DEFAULT_FRAMES = torch.tensor(residue_constants.restype_rigid_group_default_fram
 ATOM_MASK = torch.tensor(residue_constants.restype_atom14_mask)
 GROUP_IDX = torch.tensor(residue_constants.restype_atom14_to_rigid_group)
 
+def create_rigid(rots, trans):
+    rots = ru.Rotation(rot_mats=rots)
+    return Rigid(rots=rots, trans=trans)
+
+def to_atom37(trans, rots):
+    num_batch, num_res, _ = trans.shape
+    final_atom37 = compute_backbone(
+        create_rigid(rots, trans),
+        torch.zeros(num_batch, num_res, 2, device=trans.device)
+    )[0]
+    return final_atom37
 
 def torsion_angles_to_frames(
         r: Rigid,
@@ -218,3 +229,60 @@ def vector_projection(R_ab, P_n):
     a_x_b = torch.sum(R_ab * P_n, dim=-1)
     b_x_b = torch.sum(P_n * P_n, dim=-1)
     return R_ab - (a_x_b / b_x_b)[:, None] * P_n
+
+
+def transrot_to_atom37(transrot_traj, res_mask):
+    atom37_traj = []
+    res_mask = res_mask.detach().cpu()
+    num_batch = res_mask.shape[0]
+    for trans, rots in transrot_traj:
+        rigids = create_rigid(rots, trans)
+        atom37 = compute_backbone(
+            rigids,
+            torch.zeros(
+                trans.shape[0],
+                trans.shape[1],
+                2,
+                device=trans.device
+            )
+        )[0]
+        atom37 = atom37.detach().cpu()
+        batch_atom37 = []
+        for i in range(num_batch):
+            batch_atom37.append(
+                adjust_oxygen_pos(atom37[i], res_mask[i])
+            )
+        atom37_traj.append(torch.stack(batch_atom37))
+    return atom37_traj
+
+
+def process_trans_rot_traj(trans_traj, rots_traj, res_mask):
+    res_mask = res_mask.detach().cpu()
+    atom37_traj = [
+         atom37_from_trans_rot(trans, rots, res_mask)
+         for trans, rots in zip(trans_traj, rots_traj)
+    ]
+    atom37_traj = torch.stack(atom37_traj).swapaxes(0, 1)
+    return atom37_traj
+
+def atom37_from_trans_rot(trans, rots, res_mask=None):
+    if res_mask is None:
+        res_mask = torch.ones([*trans.shape[:-1]], device=trans.device)
+    rigids = create_rigid(rots, trans)
+    atom37 = compute_backbone(
+        rigids,
+        torch.zeros(
+            trans.shape[0],
+            trans.shape[1],
+            2,
+            device=trans.device
+        )
+    )[0]
+    atom37 = atom37.to(trans.device)
+    batch_atom37 = []
+    num_batch = res_mask.shape[0]
+    for i in range(num_batch):
+        batch_atom37.append(
+            adjust_oxygen_pos(atom37[i], res_mask[i])
+        )
+    return torch.stack(batch_atom37)

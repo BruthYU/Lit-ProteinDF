@@ -214,7 +214,7 @@ class frameflow_Lightning_Model(pl.LightningModule):
         batch_metrics = []
         for i in range(num_batch):
             sample_dir = os.path.join(
-                self.checkpoint_dir,
+                self.exp_conf.eval_dir,
                 f'sample_{lmdb_index[i].item()}_idx_{batch_idx}_len_{num_res}'
             )
             os.makedirs(sample_dir, exist_ok=True)

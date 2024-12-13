@@ -74,6 +74,8 @@ experiment:
   ckpt_freq: 10
   lr_scheduler: null
 
+  # Evaluation.
+  eval_dir: ./eval_outputs
 
   # Experiment metadata
   train_sample_mode: cluster_length_batch
@@ -105,6 +107,7 @@ experiment:
 
 
 interpolant:
+  cache_dir: ${hydra:runtime.cwd}/data/frameflow/.cache/
   min_t: 1e-2
 
   twisting:
