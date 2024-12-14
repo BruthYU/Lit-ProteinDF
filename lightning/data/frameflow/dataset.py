@@ -71,7 +71,7 @@ class LMDB_Cache:
 
         self.csv = pd.DataFrame(lmdb_series).reset_index(drop=True)
         self.csv = self.csv.reset_index()
-        self.csv.to_csv("lmdb_protein.csv", index=True)
+        self.csv.to_csv("lmdb_protein.csv", index=False)
 
         def _get_list(idx):
             return list(map(lambda x: x[idx], result_tuples))

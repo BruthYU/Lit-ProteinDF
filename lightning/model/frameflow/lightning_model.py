@@ -92,8 +92,13 @@ class frameflow_Lightning_Model(pl.LightningModule):
         )
         self._epoch_start_time = time.time()
 
+    def cpu_to_device(self, variable):
+        device = f'cuda:{torch.cuda.current_device()}'
+        return torch.tensor(variable, device=device)
+
     def model_step(self, noisy_batch: Any):
         training_conf = self.exp_conf.training
+
         loss_mask = noisy_batch['res_mask'] * noisy_batch['diffuse_mask']
         if torch.any(torch.sum(loss_mask, dim=-1) < 1):
             raise ValueError('Empty batch encountered')
@@ -199,7 +204,7 @@ class frameflow_Lightning_Model(pl.LightningModule):
         self.interpolant.set_device(res_mask.device)
         num_batch, num_res = res_mask.shape
         diffuse_mask = batch['diffuse_mask']
-        lmdb_index = batch['lmdbIndex']
+        lmdbIndex = batch['lmdbIndex'].squeeze(-1).cpu().numpy()
         atom37_traj, _, _ = self.interpolant.sample(
             num_batch,
             num_res,
@@ -213,18 +218,16 @@ class frameflow_Lightning_Model(pl.LightningModule):
         samples = atom37_traj[-1].numpy()
         batch_metrics = []
         for i in range(num_batch):
-            sample_dir = os.path.join(
-                self.exp_conf.eval_dir,
-                f'sample_{lmdb_index[i].item()}_idx_{batch_idx}_len_{num_res}'
-            )
-            os.makedirs(sample_dir, exist_ok=True)
+            prot_path = os.path.join(
+                    self.exp_conf.eval_dir,
+                    f'epoch_{self.current_epoch}',
+                    f'Rank{self.local_rank}_B{batch_idx}S{i}_lmdbIndex_{lmdbIndex[i]}_len_{num_res}.pdb')
 
             # Write out sample to PDB file
             final_pos = samples[i]
             saved_path = au.write_prot_to_pdb(
                 final_pos,
-                os.path.join(sample_dir, 'sample.pdb'),
-                no_indexing=True
+                prot_path,
             )
             if isinstance(self.logger, WandbLogger):
                 self.validation_epoch_samples.append(

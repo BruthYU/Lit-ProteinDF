@@ -22,12 +22,13 @@ def create_rigid(rots, trans):
     return Rigid(rots=rots, trans=trans)
 
 def to_atom37(trans, rots):
+    device = trans.device
     num_batch, num_res, _ = trans.shape
     final_atom37 = compute_backbone(
         create_rigid(rots, trans),
-        torch.zeros(num_batch, num_res, 2, device=trans.device)
+        torch.zeros(num_batch, num_res, 2)
     )[0]
-    return final_atom37
+    return final_atom37.to(device)
 
 def torsion_angles_to_frames(
         r: Rigid,
