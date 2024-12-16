@@ -57,12 +57,12 @@ class frameflow_Lightning_Datamodule(pl.LightningDataModule):
         num_workers = self.data_conf.loader.num_workers
         valid_sampler = self.dataloader.NewBatchSampler(
             data_conf=self.data_conf,
-            dataset=self.trainset,
+            dataset=self.valset,
             is_training=False,
             sample_mode=None
         )
         return DataLoader(
-            self.trainset,
+            self.valset,
             batch_sampler=valid_sampler,
             num_workers=num_workers,
             prefetch_factor=None if num_workers == 0 else self.data_conf.loader.prefetch_factor,

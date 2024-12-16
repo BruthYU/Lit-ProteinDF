@@ -1,3 +1,4 @@
+import torch
 import datetime
 import os
 import warnings
@@ -5,8 +6,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 import math
 import argparse
 import shutil
+
 import pytorch_lightning as pl
-import torch
+
 import hydra
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
@@ -73,7 +75,7 @@ def run(conf: DictConfig) -> None:
         'num_nodes': 1,  # Number of nodes to use for distributed training
         "strategy": conf.experiment.strategy,
         "accumulate_grad_batches": 1,
-        'accelerator': 'cuda',  
+        'accelerator': 'cuda',
         'callbacks': load_callbacks(conf),
         'use_distributed_sampler': conf.experiment.use_distributed_sampler,
         'logger': pl_logger

@@ -96,7 +96,7 @@ class frameflow_Lightning_Model(pl.LightningModule):
         device = f'cuda:{torch.cuda.current_device()}'
         return torch.tensor(variable, device=device)
 
-    def model_step(self, noisy_batch: Any):
+    def loss_fn(self, noisy_batch: Any):
         training_conf = self.exp_conf.training
 
         loss_mask = noisy_batch['res_mask'] * noisy_batch['diffuse_mask']
@@ -296,7 +296,7 @@ class frameflow_Lightning_Model(pl.LightningModule):
                         model_sc['pred_trans'] * noisy_batch['diffuse_mask'][..., None]
                         + noisy_batch['trans_1'] * (1 - noisy_batch['diffuse_mask'][..., None])
                 )
-        batch_losses = self.model_step(noisy_batch)
+        batch_losses = self.loss_fn(noisy_batch)
         num_batch = batch_losses['trans_loss'].shape[0]
         total_losses = {
             k: torch.mean(v) for k, v in batch_losses.items()

@@ -1,3 +1,5 @@
+import pdb
+
 import numpy as np
 from preprocess.tools import so3_utils, chemical, residue_constants, protein
 import torch
@@ -133,8 +135,15 @@ class NewBatchSampler:
         eval_csv = self._data_csv[self._data_csv.modeled_seq_len.isin(eval_lengths)]
         eval_csv = eval_csv.sort_values('modeled_seq_len', ascending=False)
 
-
-        indices = eval_csv['index'].tolist()
+        # get final csv
+        replica_per_length \
+            = max(1, math.ceil(self._data_conf.samples_per_eval_length / self.num_replicas))
+        final_csv = eval_csv.groupby('modeled_seq_len').sample(
+            replica_per_length * self.num_replicas,
+            replace=True,
+            random_state=self.epoch
+        )
+        indices = final_csv['index'].tolist()
 
         # csv on each replica
         if len(self._data_csv) > self.num_replicas:
@@ -146,16 +155,10 @@ class NewBatchSampler:
 
         # Each batch contains multiple proteins of the same length.
         sample_order = []
-        replica_per_length \
-            = max(1, math.ceil(self._data_conf.samples_per_eval_length / self.num_replicas))
-        final_csv = replica_csv.groupby('modeled_seq_len').sample(
-            replica_per_length,
-            replace=True,
-            random_state=self.epoch
-        )
+
 
         for i in range(self._num_batches):
-            batch_df = final_csv.iloc[i * replica_per_length:(i + 1) * replica_per_length]
+            batch_df = replica_csv.iloc[i * replica_per_length:(i + 1) * replica_per_length]
             batch_indices = batch_df['index'].tolist()
             sample_order.append(batch_indices)
 
@@ -186,6 +189,7 @@ class NewBatchSampler:
         if len(all_batches) >= self._num_batches:
             all_batches = all_batches[:self._num_batches]
         self.sample_order = all_batches
+        print(f"----Sample Order: {self.sample_order}---")
 
     def __iter__(self):
         self._create_batches()
