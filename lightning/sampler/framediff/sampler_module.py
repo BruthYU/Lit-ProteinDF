@@ -27,9 +27,6 @@ from preprocess.tools import all_atom
 
 class framediff_Sampler:
     def __init__(self, conf: DictConfig):
-
-        self.inference_ready = False
-
         self.conf = conf
         self.infer_conf = conf.inference
         self.diff_conf = self.infer_conf.diffusion
@@ -56,7 +53,6 @@ class framediff_Sampler:
         self.inference_ckpt = self.infer_conf.weights_path
 
         # Load from Checkpoint
-        self.inference_ready = True
         self.lightning_model = framediff_Lightning_Model.load_from_checkpoint(self.inference_ckpt)
 
 
