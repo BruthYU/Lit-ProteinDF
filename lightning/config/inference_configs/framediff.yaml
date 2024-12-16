@@ -1,0 +1,36 @@
+# @package _global_
+inference:
+  name: null
+  gpu_id: null  # CUDA GPU to use
+  seed: 123
+
+
+
+  # Output will be stored in the hydra output subdir
+  # For example: lightning/hydra_inference/2024-10-21_12-12-09/framediff_outputs
+  output_dir: ./framediff_outputs/
+
+  # ${hydra:runtime.cwd} = Lit-ProteinDF/lightning
+  # Directory of software, weights, and outputs.
+  pt_hub_dir: ${hydra:runtime.cwd}/src/torch/
+  # Path to model weights.
+  weights_path: ${hydra:runtime.cwd}/src/framediff/last.ckpt
+
+  diffusion:
+    # Number of steps.
+    num_t: 500
+    # Analogous to sampling temperature.
+    noise_scale: 0.1
+    # Final t.
+    min_t: 0.01
+
+  samples:
+    # Number of backbone samples per sequence length.
+    samples_per_length: 2
+    # Minimum sequence length to sample.
+    min_length: 50
+    # Maximum sequence length to sample.
+    max_length: 52
+    # gap between lengths to sample. i.e. this script will sample all lengths
+    # in range(min_length, max_length, length_step)
+    length_step: 5

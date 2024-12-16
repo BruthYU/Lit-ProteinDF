@@ -1,7 +1,9 @@
 
 
 defaults:
-  - method: genie2
+  - inference_configs: frameflow
+  - train_configs: frameflow
+
 
 
 hydra:
