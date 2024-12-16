@@ -135,28 +135,25 @@ class NewBatchSampler:
         eval_csv = self._data_csv[self._data_csv.modeled_seq_len.isin(eval_lengths)]
         eval_csv = eval_csv.sort_values('modeled_seq_len', ascending=False)
 
-        # get final csv
+        # get global csv
         replica_per_length \
             = max(1, math.ceil(self._data_conf.samples_per_eval_length / self.num_replicas))
-        final_csv = eval_csv.groupby('modeled_seq_len').sample(
+        global_csv = eval_csv.groupby('modeled_seq_len').sample(
             replica_per_length * self.num_replicas,
             replace=True,
             random_state=self.epoch
         )
-        indices = final_csv['index'].tolist()
+        indices = global_csv['index'].tolist()
 
         # csv on each replica
-        if len(self._data_csv) > self.num_replicas:
-            replica_csv = self._data_csv.iloc[
-                indices[self.rank::self.num_replicas]
-            ]
-        else:
-            replica_csv = eval_csv
+        assert len(self._data_csv) > self.num_replicas
+        replica_csv = self._data_csv.iloc[
+            indices[self.rank::self.num_replicas]
+        ]
+
 
         # Each batch contains multiple proteins of the same length.
         sample_order = []
-
-
         for i in range(self._num_batches):
             batch_df = replica_csv.iloc[i * replica_per_length:(i + 1) * replica_per_length]
             batch_indices = batch_df['index'].tolist()
