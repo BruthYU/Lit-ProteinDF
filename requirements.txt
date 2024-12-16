@@ -9,15 +9,15 @@ biopython==1.80
 pandas==1.5.2
 ipdb==0.13.11
 ml_collections==0.1.1
-mdtraj
+mdtraj==1.10.2
+torch_scatter==2.1.2
 openmm==8.1.1
 git+https://github.com/openmm/pdbfixer.git@v1.8.1
-mdtraj==1.10.7
 tmtools==0.0.2
 POT==0.9.4
 einops==0.6.0
 geomstats==2.7.0
 gputil==1.4.0
 einops
-torch==2.0.0
-# pip install torch-scatter -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
+torch==2.1.0
+# pip install torch-scatter -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
