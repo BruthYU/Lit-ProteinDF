@@ -355,10 +355,13 @@ class frameflow_Lightning_Model(pl.LightningModule):
             **self.exp_conf.optimizer
         )
 
+
+
     def predict_step(self, batch, batch_idx):
         del batch_idx  # Unused
         device = f'cuda:{torch.cuda.current_device()}'
-        interpolant = Interpolant(self.infer_conf.interpolant)
+
+        interpolant = Interpolant(getattr(self.conf.inference, self.conf.inference.task))
         interpolant.set_device(device)
 
         sample_ids = batch['sample_id'].squeeze().tolist()
