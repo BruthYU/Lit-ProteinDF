@@ -138,5 +138,96 @@ interpolant:
   self_condition: ${model.edge_features.self_condition}
 
 
+inference:
+  seed: 123
+  task: unconditional
+  output_dir: frameflow_outputs/
+  ckpt_path: null
+  samples:
+    samples_per_length: 10
+    min_length: 60
+    max_length: 128
+    length_step: 1
+    overwrite: False
+    csv_path: motif_scaffolding/benchmark.csv
+    samples_per_target: 100
+    num_batch: 1
+    # Subset of targets to scaffold.
+    target_subset: null  # e.g. ['5TPN']
+    # Subset of lengths to sample. If null, sample all targets.
+    length_subset: null
+
+
+  #Task Specific Unconditional
+  unconditional:
+    interpolant:
+      min_t: 1e-2
+      rots:
+        corrupt: True
+        sample_schedule: exp
+        exp_rate: 10
+      trans:
+        corrupt: True
+        sample_schedule: linear
+      sampling:
+        num_timesteps: 100
+      self_condition: True
+      twisting:
+        use: False
+
+
+  #Task Specific Scaffolding
+  scaffolding:
+    interpolant:
+      min_t: 1e-2
+      rots:
+        corrupt: True
+        sample_schedule: exp
+        exp_rate: 10
+      trans:
+        corrupt: True
+        sample_schedule: linear
+      sampling:
+        num_timesteps: 100
+      self_condition: True
+      twisting:
+        use: False
+
+  #Task Specific Scaffolding-Guidance
+  scaffolding_guidance:
+    interpolant:
+      min_t: 1e-2
+      rots:
+        corrupt: True
+        sample_schedule: exp
+        exp_rate: 10
+      trans:
+        corrupt: True
+        sample_schedule: linear
+      sampling:
+        num_timesteps: 100
+      self_condition: True
+      twisting:
+        use: True
+        t_min: 0.2
+        scale: 1.
+        # scale_w_t: ot
+        r_t: 1
+        potential_trans: True
+        potential_rot: True
+        update_trans: True
+        update_rot: True
+        max_rot_grad_norm: 1000
+        align: True
+        motif_loc: False
+        max_offsets: 1000
+        # num_rots: 100
+        num_rots: 1
+        # scale_rots: math.inf
+        scale_rots: 0.
+        # scale_rots: 0.1
+        obs_noise: 0.
+
+
 
 

@@ -1,8 +1,7 @@
 
 
 defaults:
-  - inference_configs: frameflow
-  - train_configs: frameflow
+  - method: frameflow
 
 
 
