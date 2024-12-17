@@ -62,10 +62,11 @@ experiment:
   strategy: ddp
   use_distributed_sampler: True
   use_wandb: False
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 4
   num_epoch: 5
   ckpt_freq: 10
   lr_scheduler: null
+  monitor: train_loss
 
   # Experiment metadata
   seed: 100

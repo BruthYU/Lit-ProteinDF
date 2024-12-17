@@ -4,7 +4,6 @@ import numpy as np
 import hydra
 import torch
 import torch.utils.data as data
-import GPUtil
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from omegaconf import DictConfig, OmegaConf
@@ -32,9 +31,6 @@ class frameflow_Sampler:
         self.flow_module.samples_conf = self.samples_conf
         
     def run_sampling(self):
-        devices = GPUtil.getAvailable(
-            order='memory', limit = 8)[:self.infer_conf.num_gpus]
-        log.info(f"Using devices: {devices}")
         log.info(f'Evaluating {self.infer_conf.task}')
         if self.infer_conf.task == 'unconditional':
             eval_dataset = su.LengthDataset(self.samples_conf)
@@ -47,7 +43,7 @@ class frameflow_Sampler:
         trainer = Trainer(
             accelerator="gpu",
             strategy="ddp",
-            devices=devices,
+            devices= -1,  # Use all available GPUs
         )
         trainer.predict(self.flow_module, dataloaders=dataloader)
 

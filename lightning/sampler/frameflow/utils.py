@@ -237,21 +237,18 @@ def save_traj(
         sample,
         sample_path,
         b_factors=b_factors,
-        no_indexing=True,
         aatype=aatype,
     )
     prot_traj_path = au.write_prot_to_pdb(
         bb_prot_traj,
         prot_traj_path,
         b_factors=b_factors,
-        no_indexing=True,
         aatype=aatype,
     )
     x0_traj_path = au.write_prot_to_pdb(
         x0_traj,
         x0_traj_path,
         b_factors=b_factors,
-        no_indexing=True,
         aatype=aatype
     )
     return {

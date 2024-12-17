@@ -72,6 +72,7 @@ experiment:
   use_wandb: False
   ckpt_freq: 10
   lr_scheduler: step
+  monitor: train_loss
 
 
 

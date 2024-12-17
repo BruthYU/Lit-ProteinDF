@@ -84,10 +84,11 @@ experiment:
   strategy: ddp
   use_distributed_sampler: False
   num_epoch: 500
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 4
   use_wandb: False
   ckpt_freq: 10
   lr_scheduler: step
+  monitor: train_loss
 
 
   # Experiment metadata

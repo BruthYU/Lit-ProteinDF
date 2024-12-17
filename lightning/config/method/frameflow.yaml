@@ -68,11 +68,12 @@ experiment:
   # Lightning Trainer Settings
   strategy: ddp
   num_epoch: 1000
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 4
   use_distributed_sampler: False
   use_wandb: False
   ckpt_freq: 10
   lr_scheduler: null
+  monitor: valid/non_coil_percent
 
   # Evaluation.
   eval_dir: ./eval_outputs
@@ -140,9 +141,9 @@ interpolant:
 
 inference:
   seed: 123
-  task: unconditional
+  task: scaffolding
   output_dir: frameflow_outputs/
-  ckpt_path: null
+  ckpt_path: ${hydra:runtime.cwd}/resource/frameflow/last.ckpt
   samples:
     samples_per_length: 10
     min_length: 60
@@ -150,7 +151,7 @@ inference:
     length_step: 1
     overwrite: False
     csv_path: ${hydra:runtime.cwd}/resource/frameflow/benchmark.csv
-    target_dir: ${hydra:runtime.cwd}/resource/frameflow/target
+    target_dir: ${hydra:runtime.cwd}/resource/frameflow/targets
     samples_per_target: 100
     num_batch: 1
     # Subset of targets to scaffold.

@@ -186,7 +186,7 @@ class NewBatchSampler:
         if len(all_batches) >= self._num_batches:
             all_batches = all_batches[:self._num_batches]
         self.sample_order = all_batches
-        print(f"----Sample Order: {self.sample_order}---")
+        # print(f"----Sample Order: {self.sample_order}---")
 
     def __iter__(self):
         self._create_batches()

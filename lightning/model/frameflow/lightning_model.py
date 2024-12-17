@@ -26,7 +26,8 @@ class frameflow_Lightning_Model(pl.LightningModule):
 
     def __init__(self, conf):
         super().__init__()
-        self._print_logger = logging.getLogger(__name__)
+        self.save_hyperparameters()
+        self.conf = conf
         self.exp_conf = conf.experiment
         self.model_conf = conf.model
         self.data_conf = conf.dataset
@@ -360,8 +361,8 @@ class frameflow_Lightning_Model(pl.LightningModule):
     def predict_step(self, batch, batch_idx):
         del batch_idx  # Unused
         device = f'cuda:{torch.cuda.current_device()}'
-
-        interpolant = Interpolant(getattr(self.conf.inference, self.conf.inference.task))
+        task_specific_conf = getattr(self.infer_conf, self.infer_conf.task)
+        interpolant = Interpolant(task_specific_conf.interpolant)
         interpolant.set_device(device)
 
         sample_ids = batch['sample_id'].squeeze().tolist()

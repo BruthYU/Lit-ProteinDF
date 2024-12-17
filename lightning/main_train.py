@@ -33,7 +33,7 @@ def load_callbacks(conf):
     callback_list = []
     # Checkpoint Callback
     callback_list.append(plc.ModelCheckpoint(
-        monitor='train_loss',
+        monitor= conf.experiment.monitor,
         filename='best-{epoch:02d}-{train_loss:.3f}',
         save_top_k=2,
         mode='min',
@@ -78,6 +78,7 @@ def run(conf: DictConfig) -> None:
         'accelerator': 'cuda',
         'callbacks': load_callbacks(conf),
         'use_distributed_sampler': conf.experiment.use_distributed_sampler,
+        'check_val_every_n_epoch': conf.experiment.check_val_every_n_epoch,
         'logger': pl_logger
     }
 
