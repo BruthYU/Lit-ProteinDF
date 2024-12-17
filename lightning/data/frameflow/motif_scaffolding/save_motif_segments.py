@@ -17,7 +17,7 @@ import collections
 
 from lightning.data.frameflow import utils as du
 from preprocess.tools import all_atom
-from lightning.model.frameflow import utils as mu
+from lightning.sampler.frameflow import utils as su
 from evaluate.openfold.utils import rigid_utils as ru
 from evaluate.openfold.data import data_transforms
 from lightning.model.frameflow.analysis import utils as au
@@ -43,9 +43,9 @@ def create_pad_feats(pad_amt):
     }
     return pad_feats
 
-def process_motif_row(motif_row):
+def process_motif_row(target_dir, motif_row):
     """Parse row in the motif CSV."""
-    motif_path = motif_row.motif_path
+    motif_path = os.path.join(target_dir,f'{motif_row.target}.pdb')
     motif_chain_feats = du.parse_pdb_feats(
         'motif', motif_path, chain_id=None)
     return {
@@ -124,8 +124,8 @@ def process_contig(sample_contig, all_chain_feats):
             motif_atom_positions.append(chain_feats['all_atom_positions'][start_idx:(end_idx+1)])
     return motif_rigids, motif_locations, length_so_far, motif_aatypes, motif_atom_positions
 
-def load_contig_test_case(row):
-    motif_chain_feats = process_motif_row(row)
+def load_contig_test_case(target_dir, row):
+    motif_chain_feats = process_motif_row(target_dir, row)
     motif_length = row.length
     motif_contig = row.contig
 
@@ -139,7 +139,7 @@ def load_contig_test_case(row):
         raise ValueError(f'Unrecognized length: {motif_length}')
 
     # Run multiple samples for each motif
-    sample_contig, _, _ = mu.get_sampled_mask(motif_contig, motif_length)
+    sample_contig, _, _ = su.get_sampled_mask(motif_contig, motif_length)
 
     # Create input features with sampled contig.
     motif_segments, motif_locations, total_length, motif_aatypes, motif_atom_positions = process_contig(sample_contig[0], motif_chain_feats)
@@ -155,11 +155,11 @@ def load_contig_test_case(row):
     }
     return contig_test_case
 
-def load_contigs_by_test_case(inpaint_df):
+def load_contigs_by_test_case(target_dir, inpaint_df):
     contigs_by_test_case = {}
     for _, row in inpaint_df.iterrows():
         name = str(row.target)
-        contigs_by_test_case[name] = load_contig_test_case(row)
+        contigs_by_test_case[name] = load_contig_test_case(target_dir, row)
     return contigs_by_test_case
 
 def save_motifs(csv_path, motif_segments_base_dir):

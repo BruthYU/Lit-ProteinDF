@@ -12,3 +12,4 @@ evaluate/eval_data
 /.sync.ffs_db
 /lightning/src/
 /mathematics/
+*.ckpt

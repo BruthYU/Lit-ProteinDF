@@ -29,7 +29,7 @@ class frameflow_Sampler:
         )
         self.flow_module.eval()
         self.flow_module.infer_conf = self.infer_conf
-        self.flow_module.sample_conf = self.samples_conf
+        self.flow_module.samples_conf = self.samples_conf
         
     def run_sampling(self):
         devices = GPUtil.getAvailable(

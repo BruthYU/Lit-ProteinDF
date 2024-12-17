@@ -18,7 +18,7 @@ from lightning.data.frameflow import utils as du
 from preprocess.tools import all_atom
 from lightning.data.frameflow import so3_utils
 from preprocess.tools import residue_constants
-from lightning.model.frameflow import utils_experiment as eu
+from lightning.sampler.frameflow import utils as su
 from pytorch_lightning.loggers.wandb import WandbLogger
 
 
@@ -403,7 +403,7 @@ class frameflow_Lightning_Model(pl.LightningModule):
                 aatype = du.to_numpy(batch['aatype'].long())[0]
             else:
                 aatype = np.zeros(sample_length, dtype=int)
-            _ = eu.save_traj(
+            _ = su.save_traj(
                 bb_traj[-1],
                 bb_traj,
                 np.flip(du.to_numpy(torch.concat(model_traj, dim=0)), axis=0),

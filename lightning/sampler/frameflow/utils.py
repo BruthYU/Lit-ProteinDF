@@ -14,20 +14,20 @@ from evaluate.openfold.utils import rigid_utils as ru
 
 
 class LengthDataset(data.Dataset):
-    def __init__(self, samples_cfg):
-        self._samples_cfg = samples_cfg
+    def __init__(self, samples_conf):
+        self.samples_conf = samples_conf
         all_sample_lengths = range(
-            self._samples_cfg.min_length,
-            self._samples_cfg.max_length+1,
-            self._samples_cfg.length_step
+            self.samples_conf.min_length,
+            self.samples_conf.max_length+1,
+            self.samples_conf.length_step
         )
-        if samples_cfg.length_subset is not None:
+        if samples_conf.length_subset is not None:
             all_sample_lengths = [
-                int(x) for x in samples_cfg.length_subset
+                int(x) for x in samples_conf.length_subset
             ]
         all_sample_ids = []
         for length in all_sample_lengths:
-            for sample_id in range(self._samples_cfg.samples_per_length):
+            for sample_id in range(self.samples_conf.samples_per_length):
                 all_sample_ids.append((length, sample_id))
         self._all_sample_ids = all_sample_ids
 
@@ -44,21 +44,21 @@ class LengthDataset(data.Dataset):
 
 
 class ScaffoldingDataset(data.Dataset):
-    def __init__(self, samples_cfg):
-        self._samples_cfg = samples_cfg
-        self._benchmark_df = pd.read_csv(self._samples_cfg.csv_path)
-        if self._samples_cfg.target_subset is not None:
+    def __init__(self, samples_conf):
+        self.samples_conf = samples_conf
+        self._benchmark_df = pd.read_csv(self.samples_conf.csv_path)
+        if self.samples_conf.target_subset is not None:
             self._benchmark_df = self._benchmark_df[
-                self._benchmark_df.target.isin(self._samples_cfg.target_subset)
+                self._benchmark_df.target.isin(self.samples_conf.target_subset)
             ]
         if len(self._benchmark_df) == 0:
             raise ValueError('No targets found.')
         contigs_by_test_case = save_motif_segments.load_contigs_by_test_case(
-            self._benchmark_df)
+            self.samples_conf.target_dir, self._benchmark_df)
 
-        num_batch = self._samples_cfg.num_batch
-        assert self._samples_cfg.samples_per_target % num_batch == 0
-        self.n_samples = self._samples_cfg.samples_per_target // num_batch
+        num_batch = self.samples_conf.num_batch
+        assert self.samples_conf.samples_per_target % num_batch == 0
+        self.n_samples = self.samples_conf.samples_per_target // num_batch
 
         all_sample_ids = []
         for row_id in range(len(contigs_by_test_case)):

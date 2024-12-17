@@ -149,7 +149,8 @@ inference:
     max_length: 128
     length_step: 1
     overwrite: False
-    csv_path: motif_scaffolding/benchmark.csv
+    csv_path: ${hydra:runtime.cwd}/resource/frameflow/benchmark.csv
+    target_dir: ${hydra:runtime.cwd}/resource/frameflow/target
     samples_per_target: 100
     num_batch: 1
     # Subset of targets to scaffold.
