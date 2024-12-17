@@ -111,10 +111,14 @@ outputs during training (such as checkpoints and evaluation results):
     ```
 ---
 ### Inference
-- **Create Resource Directory:** Before inference, you need to create a folder `lightning/src` to place resources for inference (such as pre-trained checkpoints 
-and task files for motif scaffolding):
+- **Create Resource Directory:** Before inference, you need to create a folder `lightning/resource` to place resources for inference (such as pre-trained checkpoints 
+and task files for motif scaffolding)
     ```text
-    lightning/src
+    lightning/resource
+     └── frameflow
+        ├── targets
+        ├── benchmark.csv 
+        └── last.ckpt
     └── genie2
         ├── design25
         └── last.ckpt
@@ -154,6 +158,7 @@ and task files for motif scaffolding):
    inference:
       task_type: scaffold # scaffold 
     ```
-   Please refer to each original repo to see the [Format of Motif Scaffolding Problem Definition File](https://github.com/aqlaboratory/genie2/blob/9a954578f7b5a39552545eebc6d4794447794c87/README.md?plain=1#L135).
-  
+   Please refer to each original repo to see the 
+- *Genie2*: [Format of Motif Scaffolding Problem Definition File](https://github.com/aqlaboratory/genie2/blob/9a954578f7b5a39552545eebc6d4794447794c87/README.md?plain=1#L135).
+- *FrameFlow*: [README.md: Motif-scaffolding](https://github.com/microsoft/protein-frame-flow/blob/f50d8dbbdae827be291e9f73d732b61b195f8816/README.md?plain=1#L139)  
 
