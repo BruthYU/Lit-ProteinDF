@@ -74,7 +74,7 @@ class ScaffoldingDataset(data.Dataset):
     def __getitem__(self, idx):
         target_row, sample_id = self._all_sample_ids[idx]
         target = target_row.target
-        motif_contig_info = save_motif_segments.load_contig_test_case(target_row)
+        motif_contig_info = save_motif_segments.load_contig_test_case(self.samples_conf.target_dir, target_row)
         motif_segments = [
             torch.tensor(motif_segment, dtype=torch.float64)
             for motif_segment in motif_contig_info['motif_segments']]

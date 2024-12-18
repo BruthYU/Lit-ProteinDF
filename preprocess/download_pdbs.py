@@ -19,6 +19,8 @@ from tqdm import tqdm
 os.environ['http_proxy'] = '127.0.0.1:7890'
 os.environ['https_proxy'] = '127.0.0.1:7890'
 
+pdb_codes_file = '../lightning/resource/frameflow/targets'
+print(os.listdir(pdb_codes_file))
 
 # File containing comma-separated list of the desired PDB IDs
 pdb_codes_file = '../lightning/resource/frameflow/benchmark.csv'
@@ -46,7 +48,7 @@ except OSError as e:
 
 for pdb_code in tqdm(pdb_codes):
     # Add .pdb extension and remove ':1' suffix if entities
-    filename = '%s.pdb' % pdb_code[:4]
+    filename = '%s.pdb' % pdb_code[:4].upper()
     # Add .gz extension if compressed
     if compressed:
         filename = '%s.gz' % filename

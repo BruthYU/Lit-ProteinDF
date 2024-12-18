@@ -1,6 +1,7 @@
 import numpy as np
 
 
+
 def load_motif_spec(filepath):
 	"""
 	Load motif specification file.

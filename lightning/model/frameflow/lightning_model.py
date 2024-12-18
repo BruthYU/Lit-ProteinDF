@@ -378,7 +378,7 @@ class frameflow_Lightning_Model(pl.LightningModule):
             true_bb_pos = true_bb_pos[..., :3, :].reshape(-1, 3).cpu().numpy()
             _, sample_length, _ = trans_1.shape
             sample_dirs = [os.path.join(
-                self.infer_conf.otuput_dir, target, f'sample_{str(sample_id)}')
+                self.infer_conf.output_dir, target, f'sample_{str(sample_id)}')
                 for sample_id in sample_ids]
         else:  # unconditional
             sample_length = batch['num_res'].item()
