@@ -1,6 +1,60 @@
 import numpy as np
 
 
+def load_motif_contig(row):
+	row_name = row.target
+	row_length = row.length
+	if isinstance(row_length, str):
+		scaffold_lengths = [int(x) for x in row_length.split('-')]
+		if len(scaffold_lengths) == 1:
+			scaffold_lengths.append(int(scaffold_lengths[0]) + 1)
+	else:
+		raise ValueError(f'Unrecognized length: {row_length}')
+
+	structures = []
+	total_motif_length = 0
+	motif_index = 0
+	contigs = row.contig
+	contig_list = contigs.strip().split(',')
+	for con in contig_list:
+		if con[0].is_alpha():
+			res_indexes = [int(x) for x in con[1:].split('-')]
+			structures.append({
+				'type': 'motif',
+				'chain': con[0],
+				'start_index': res_indexes[0],
+				'end_index': res_indexes[1],
+				'group': chr(ord('A')+motif_index)
+			})
+			total_motif_length = total_motif_length + res_indexes[1] - res_indexes[0]
+			motif_index += 1
+		else:
+			scaffold_lengths = [int(x) for x in con.split('-')]
+			structures.append({
+				'type': 'scaffold',
+				'min_length': scaffold_lengths[0],
+				'max_length': scaffold_lengths[1]
+			})
+
+	total_sequence_lengths = [x + total_motif_length for x in scaffold_lengths]
+
+	return {
+		'name': row_name,
+		'structures': structures,
+		'min_total_length': total_sequence_lengths[0],
+		'max_total_length': total_sequence_lengths[1]
+	}
+
+
+
+
+
+
+
+
+
+
+
 
 def load_motif_spec(filepath):
 	"""

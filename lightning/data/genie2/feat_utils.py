@@ -4,7 +4,7 @@ import numpy as np
 import json
 from preprocess.tools.residue_constants import restype_3to1, \
     restype_order_with_x, restypes_with_x, resnames
-from lightning.data.genie2.motif_utils import load_motif_spec, sample_motif_mask
+from lightning.data.genie2.motif_utils import load_motif_spec, sample_motif_mask, load_motif_contig
 from itertools import compress
 
 
@@ -49,6 +49,33 @@ def parse_pdb(filepath):
             seqs, coords = _handle(file)
 
     return seqs, coords
+
+def create_np_features_from_contig(row, filepath):
+    spec = load_motif_contig(row)
+    motif_seqs, motif_coords = parse_pdb(filepath)
+    motif_aatype = np.concatenate(motif_seqs)
+    motif_aatype = np.eye(len(restypes_with_x))[motif_aatype]  # one-hot encoding
+    motif_atom_positions = np.concatenate(motif_coords)
+
+    # Generate motif mask
+    motif_mask = sample_motif_mask(spec)
+    fixed_sequence_mask = motif_mask['sequence']
+    fixed_structure_mask = motif_mask['structure']
+    fixed_group = motif_mask['group']
+
+    # Initialize features
+    num_residues = len(fixed_sequence_mask)
+    features = create_empty_np_features([num_residues])
+
+    # Update features
+    features['aatype'][fixed_sequence_mask] = motif_aatype
+    features['atom_positions'][fixed_sequence_mask] = motif_atom_positions
+    features['fixed_sequence_mask'] = fixed_sequence_mask
+    features['fixed_structure_mask'] = fixed_structure_mask
+    features['fixed_group'] = fixed_group
+
+    return features
+
 
 def create_np_features_from_motif_pdb(filepath):
     """

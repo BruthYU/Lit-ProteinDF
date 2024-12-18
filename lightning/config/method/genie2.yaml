@@ -78,9 +78,7 @@ experiment:
 
 
 inference:
-
   task_type: scaffold # scaffold
-
   unconditional:
     weights_path: ${hydra:runtime.cwd}/resource/genie2/last.ckpt
     output_dir: ./genie2_outputs/
@@ -92,6 +90,7 @@ inference:
     length_step: 1
 
   scaffold:
+    csv_path: ${hydra:runtime.cwd}/resource/genie2/benchmark.csv
     weights_path: ${hydra:runtime.cwd}/src/genie2/last.ckpt
     output_dir: ./genie2_outputs/
     num_samples: 4 # number of samples per task

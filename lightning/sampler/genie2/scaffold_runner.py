@@ -18,7 +18,7 @@ class ScaffoldRunner(MultiProcessor):
 		Define a set of tasks to be distributed across processes.
 
 		Args:
-			params:
+			infer_conf:
 				A dictionary of parameters.
 
 		Returns:
@@ -64,7 +64,7 @@ class ScaffoldRunner(MultiProcessor):
 
 		# Define
 		names = [
-			'weights_path', 'scale', 'strength',
+			'weights_path', 'scale', 'strength', 'csv_path',
 			'output_dir', 'num_samples', 'batch_size', 'datadir'
 		]
 
