@@ -19,23 +19,22 @@ from tqdm import tqdm
 os.environ['http_proxy'] = '127.0.0.1:7890'
 os.environ['https_proxy'] = '127.0.0.1:7890'
 
-pdb_codes_file = '../lightning/resource/frameflow/targets'
-print(os.listdir(pdb_codes_file))
+# pdb_codes_file = '../lightning/resource/frameflow/targets'
+# print(os.listdir(pdb_codes_file))
+#
+# # File containing comma-separated list of the desired PDB IDs
+# pdb_codes_file = '../lightning/resource/frameflow/benchmark.csv'
 
-# File containing comma-separated list of the desired PDB IDs
-pdb_codes_file = '../lightning/resource/frameflow/benchmark.csv'
+# pdb_df = pd.read_csv(pdb_codes_file)
+# pdb_codes = list(pdb_df['target'])
 
-# Folder to download files to
-download_folder = './raw/pdb'
 
 # Whether to download gzip compressed files
 compressed = False
-
-pdb_df = pd.read_csv(pdb_codes_file)
-pdb_codes = list(pdb_df['target'])
-
+# Folder to download files to
+download_folder = './raw/pdb'
 # Alternatively, hard code the PDB IDs:
-# pdb_codes = ['1LS6', '1Z28', '2D06', '3QVU', '3QVV', '3U3J', '3U3K']
+pdb_codes = ['1LS6', '1Z28', '2D06', '3QVU', '3QVV', '3U3J', '3U3K']
 
 print(pdb_codes)
 

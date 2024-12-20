@@ -24,7 +24,7 @@ def load_motif_contig(row):
 				'chain': con[0],
 				'start_index': res_indexes[0],
 				'end_index': res_indexes[1],
-				'group': chr(ord('A')+motif_index)
+				'group': 'A'
 			})
 			total_motif_length = total_motif_length + res_indexes[1] - res_indexes[0]
 			motif_index += 1
