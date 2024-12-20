@@ -2,7 +2,7 @@ import os
 import glob
 import argparse
 from tqdm import tqdm
-
+import pandas as pd
 from lightning.sampler.genie2.scaffold import ScaffoldSampler
 from lightning.sampler.genie2.multiprocessor import MultiProcessor
 from lightning.model.genie2.lightning_model import genie2_Lightning_Model
@@ -12,8 +12,17 @@ class ScaffoldRunner(MultiProcessor):
 	"""
 	A multi-processing runner for sampling scaffold given motif specifications.
 	"""
-
 	def create_tasks(self, infer_conf):
+		# Initialize
+		tasks = []
+		task_df = pd.read_csv(infer_conf.csv_path)
+		for row in task_df:
+			tasks.append({'motif_row': row})
+		return tasks
+
+
+
+	def old_create_tasks(self, infer_conf):
 		"""
 		Define a set of tasks to be distributed across processes.
 
@@ -105,7 +114,7 @@ class ScaffoldRunner(MultiProcessor):
 			# Define output directory
 			output_dir = os.path.join(
 				constants['output_dir'],
-				'motif={}'.format(task['motif_name'])
+				'motif={}'.format(task['motif_row'].target)
 			)
 
 			# Initialize
@@ -118,12 +127,13 @@ class ScaffoldRunner(MultiProcessor):
 				batch_size = min(constants['batch_size'], num_samples)
 				filepath = os.path.join(
 					constants['datadir'],
-					'{}.pdb'.format(task['motif_name'])
+					'{}.pdb'.format(task['motif_row'].target)
 				)
 
 				# Initialize parameters
 				params = {
 					'filepath': filepath,
+					'motif_row': task['motif_row'],
 					'scale': constants['scale'],
 					'strength': constants['strength'],
 					'num_samples': batch_size,

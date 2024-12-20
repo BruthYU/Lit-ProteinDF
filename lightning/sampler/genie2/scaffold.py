@@ -5,7 +5,8 @@ import torch
 from lightning.sampler.genie2.base import BaseSampler
 from lightning.data.genie2.feat_utils import (
 	create_np_features_from_motif_pdb,
-	save_np_features_to_pdb
+	save_np_features_to_pdb,
+	create_np_features_from_contig
 )
 from lightning.data.genie2.motif_utils import save_motif_pdb
 
@@ -97,7 +98,8 @@ class ScaffoldSampler(BaseSampler):
 				-	interface_mask:
 						[N] deprecated and set to all zeros.
 		"""
-		return create_np_features_from_motif_pdb(params['filepath'])
+		# return create_np_features_from_motif_pdb(params['filepath'])
+		return create_np_features_from_contig(params['motif_row'], params['filepath'])
 
 	def on_sample_end(self, params, list_np_features):
 		"""

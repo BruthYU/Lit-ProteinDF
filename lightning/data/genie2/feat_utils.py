@@ -50,8 +50,8 @@ def parse_pdb(filepath):
 
     return seqs, coords
 
-def create_np_features_from_contig(row, filepath):
-    spec = load_motif_contig(row)
+def create_np_features_from_contig(motif_row, filepath):
+    spec = load_motif_contig(motif_row)
     motif_seqs, motif_coords = parse_pdb(filepath)
     motif_aatype = np.concatenate(motif_seqs)
     motif_aatype = np.eye(len(restypes_with_x))[motif_aatype]  # one-hot encoding
