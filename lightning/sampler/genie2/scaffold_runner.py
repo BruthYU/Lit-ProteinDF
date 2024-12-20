@@ -16,7 +16,7 @@ class ScaffoldRunner(MultiProcessor):
 		# Initialize
 		tasks = []
 		task_df = pd.read_csv(infer_conf.csv_path)
-		for row in task_df:
+		for idx, row in task_df.iterrows():
 			tasks.append({'motif_row': row})
 		return tasks
 
@@ -138,7 +138,7 @@ class ScaffoldRunner(MultiProcessor):
 					'strength': constants['strength'],
 					'num_samples': batch_size,
 					'output_dir': output_dir,
-					'prefix': task['motif_name'],
+					'prefix': task['motif_row'].target,
 					'offset': constants['num_samples'] - num_samples
 				}
 

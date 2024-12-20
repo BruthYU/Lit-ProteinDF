@@ -161,11 +161,11 @@ inference:
 
 
   # Directory of software, weights, and outputs.
-  pt_hub_dir: ${hydra:runtime.cwd}/src/torch/
+  pt_hub_dir: ${hydra:runtime.cwd}/resource/torch/
   output_dir: ./foldflow_outputs
 
   # Path to model weights.
-  weights_path: ${hydra:runtime.cwd}/src/foldflow/last.ckpt
+  weights_path: ${hydra:runtime.cwd}/resource/foldflow/last.ckpt
 
   flow:
     # Number of steps.

@@ -91,14 +91,14 @@ inference:
 
   scaffold:
     csv_path: ${hydra:runtime.cwd}/resource/genie2/benchmark.csv
-    weights_path: ${hydra:runtime.cwd}/src/genie2/last.ckpt
+    weights_path: ${hydra:runtime.cwd}/resource/genie2/last.ckpt
     output_dir: ./genie2_outputs/
-    num_samples: 4 # number of samples per task
-    batch_size: 4 # number of samples with once inference
+    num_samples: 2 # number of samples per task
+    batch_size: 2 # number of samples with once inference
     scale: 0.4 # Sampling noise scale
     strength: 0
     motif_name: null
-    datadir: ${hydra:runtime.cwd}/src/genie2/design25
+    datadir: ${hydra:runtime.cwd}/resource/genie2/design25
 
 
 

@@ -13,3 +13,4 @@ evaluate/eval_data
 /lightning/src/
 /mathematics/
 *.ckpt
+/lightning/resource/frameflow/rename_target.py
