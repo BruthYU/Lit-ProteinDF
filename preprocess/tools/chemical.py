@@ -11,6 +11,22 @@ num2aa=[
 
 aa2num= {x:i for i,x in enumerate(num2aa)}
 
+# Mapping 3 letter AA to 1 letter AA (e.g. ALA to A)
+one_letter = ["A", "R", "N", "D", "C", \
+             "Q", "E", "G", "H", "I", \
+             "L", "K", "M", "F", "P", \
+             "S", "T", "W", "Y", "V", "?", "-"]
+
+
+aa_321 = {a:b for a,b in zip(num2aa,one_letter)}
+aa_123 = {val:key for key,val in aa_321.items()}
+
+
+# create single letter code string from parsed integer sequence
+def seq2chars(seq):
+    out = ''.join([aa_321[num2aa[a]] for a in seq])
+    return out
+
 # full sc atom representation (Nx14)
 aa2long=[
     (" N  "," CA "," C  "," O  "," CB ",  None,  None,  None,  None,  None,  None,  None,  None,  None," H  "," HA ","1HB ","2HB ","3HB ",  None,  None,  None,  None,  None,  None,  None,  None), # ala
