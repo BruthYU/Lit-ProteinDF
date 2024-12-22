@@ -33,7 +33,7 @@ cd Lit-ProteinDF
 pip install -r requirements.txt
 ```
 Specially, you also need to install [NVIDIA's implementation of SE(3)-Transformers](https://developer.nvidia.com/blog/accelerating-se3-transformers-training-using-an-nvidia-open-source-model-implementation/) 
-to **RFdiffusion**. Here is how to install the NVIDIA SE(3)-Transformer:
+to use **RFdiffusion**. Here is how to install the NVIDIA SE(3)-Transformer:
 ```shell
 cd Lit-ProteinDF/lightning/model/rfdiffusion/SE3Transformer
 python setup.py install
