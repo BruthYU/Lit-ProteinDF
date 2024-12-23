@@ -12,7 +12,6 @@ import logging
 class genie2_Sampler:
     def __init__(self, conf: DictConfig):
         self.log = logging.getLogger(__name__)
-        self.inference_ready = False
 
         if conf.inference.task_type == "unconditional":
             self.runner = UnconditionalRunner()

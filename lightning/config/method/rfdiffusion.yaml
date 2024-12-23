@@ -1,5 +1,5 @@
-# Base inference Configuration.
-
+# @package _global_
+method_name: rfdiffusion
 inference:
   input_pdb: null
   num_designs: 10
@@ -9,7 +9,7 @@ inference:
   recenter: True
   radius: 10.0
   model_only_neighbors: False
-  output_prefix: samples/design
+  output_dir: ./rfdiffusion_outputs/
   write_trajectory: True
   scaffold_guided: False
   model_runner: SelfConditioning

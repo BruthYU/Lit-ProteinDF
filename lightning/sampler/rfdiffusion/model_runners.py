@@ -1,21 +1,21 @@
 import torch
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
-from rfdiffusion.RoseTTAFoldModel import RoseTTAFoldModule
-from rfdiffusion.kinematics import get_init_xyz, xyz_to_t2d
-from rfdiffusion.diffusion import Diffuser
-from rfdiffusion.chemical import seq2chars
-from rfdiffusion.util_module import ComputeAllAtomCoords
-from rfdiffusion.contigs import ContigMap
-from rfdiffusion.inference import utils as iu, symmetry
-from rfdiffusion.potentials.manager import PotentialManager
+from lightning.model.rfdiffusion.RoseTTAFoldModel import RoseTTAFoldModule
+from lightning.model.rfdiffusion.kinematics import get_init_xyz, xyz_to_t2d
+from lightning.model.rfdiffusion.diffusion import Diffuser
+from preprocess.tools.chemical import seq2chars
+from lightning.model.rfdiffusion.util_module import ComputeAllAtomCoords
+from lightning.model.rfdiffusion.contigs import ContigMap
+from lightning.sampler.rfdiffusion import utils as iu, symmetry
+from lightning.model.rfdiffusion.potentials.manager import PotentialManager
 import logging
 import torch.nn.functional as nn
-from rfdiffusion import util
+from lightning.model.rfdiffusion import util
 from hydra.core.hydra_config import HydraConfig
 import os
 
-from rfdiffusion.model_input_logger import pickle_function_call
+from lightning.model.rfdiffusion.model_input_logger import pickle_function_call
 import sys
 
 SCRIPT_DIR=os.path.dirname(os.path.realpath(__file__))

@@ -3,11 +3,11 @@ import os
 from omegaconf import DictConfig
 import torch
 import torch.nn.functional as nn
-from rfdiffusion.diffusion import get_beta_schedule
+from lightning.model.rfdiffusion.diffusion import get_beta_schedule
 from scipy.spatial.transform import Rotation as scipy_R
-from rfdiffusion.util import rigid_from_3_points
-from rfdiffusion.util_module import ComputeAllAtomCoords
-from rfdiffusion import util
+from lightning.model.rfdiffusion.util import rigid_from_3_points
+from lightning.model.rfdiffusion.util_module import ComputeAllAtomCoords
+from lightning.model.rfdiffusion import util
 import random
 import logging
 from lightning.sampler.rfdiffusion import model_runners
