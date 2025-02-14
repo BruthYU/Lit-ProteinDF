@@ -63,32 +63,31 @@ class Sampler:
         if self._conf.is_training:
             model_directory = f"{HYDRA_DIR}/resource/rfdiffusion/official_ckpts"
             print("WARNING: Official checkpoints will be loaded for fine-tuning.")
+            if conf.contigmap.inpaint_seq is not None or conf.contigmap.provide_seq is not None or conf.contigmap.inpaint_str:
+                # use model trained for inpaint_seq
+                if conf.contigmap.provide_seq is not None:
+                    # this is only used for partial diffusion
+                    assert conf.diffuser.partial_T is not None, "The provide_seq input is specifically for partial diffusion"
+                if conf.scaffoldguided.scaffoldguided:
+                    self.ckpt_path = f'{model_directory}/InpaintSeq_Fold_ckpt.pt'
+                else:
+                    self.ckpt_path = f'{model_directory}/InpaintSeq_ckpt.pt'
+            elif conf.ppi.hotspot_res is not None and conf.scaffoldguided.scaffoldguided is False:
+                # use complex trained model
+                self.ckpt_path = f'{model_directory}/Complex_base_ckpt.pt'
+            elif conf.scaffoldguided.scaffoldguided is True:
+                # use complex and secondary structure-guided model
+                self.ckpt_path = f'{model_directory}/Complex_Fold_base_ckpt.pt'
+            else:
+                # use default model
+                self.ckpt_path = f'{model_directory}/Base_ckpt.pt'
         else:
-            assert conf.inference.model_directory_path is not None, "model_directory_path must be specified in the inference mode."
-            model_directory = conf.inference.model_directory_path
+            model_directory = f"{HYDRA_DIR}/resource/rfdiffusion/override_ckpts"
             print("WARNING: Fine-tuned checkpoint will be loaded since inference.model_directory_path is specified.")
-
+            self.ckpt_path = f'{model_directory}/{conf.inference.ckpt_path}'
+            print("WARNING: You're overriding the checkpoint path from the defaults. Check that the model you're providing can run with the inputs you're providing.")
         print(f"Reading models from {model_directory}")
 
-        # Initialize inference only helper objects to Sampler
-        if conf.contigmap.inpaint_seq is not None or conf.contigmap.provide_seq is not None or conf.contigmap.inpaint_str:
-            # use model trained for inpaint_seq
-            if conf.contigmap.provide_seq is not None:
-                # this is only used for partial diffusion
-                assert conf.diffuser.partial_T is not None, "The provide_seq input is specifically for partial diffusion"
-            if conf.scaffoldguided.scaffoldguided:
-                self.ckpt_path = f'{model_directory}/InpaintSeq_Fold_ckpt.pt'
-            else:
-                self.ckpt_path = f'{model_directory}/InpaintSeq_ckpt.pt'
-        elif conf.ppi.hotspot_res is not None and conf.scaffoldguided.scaffoldguided is False:
-            # use complex trained model
-            self.ckpt_path = f'{model_directory}/Complex_base_ckpt.pt'
-        elif conf.scaffoldguided.scaffoldguided is True:
-            # use complex and secondary structure-guided model
-            self.ckpt_path = f'{model_directory}/Complex_Fold_base_ckpt.pt'
-        else:
-            # use default model
-            self.ckpt_path = f'{model_directory}/Base_ckpt.pt'
         # for saving in trb file:
         assert self._conf.inference.trb_save_ckpt_path is None, "trb_save_ckpt_path is not the place to specify an input model. Specify in inference.ckpt_override_path"
         self._conf['inference']['trb_save_ckpt_path']=self.ckpt_path

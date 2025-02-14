@@ -5,15 +5,15 @@ inference:
   input_pdb: null
   num_designs: 10
   design_startnum: 0
-  ckpt_override_path: null
   symmetry: null
   recenter: True
   radius: 10.0
   model_only_neighbors: False
   output_dir: ./rfdiffusion_outputs/
+  output_prefix: samples/design
   write_trajectory: True
   scaffold_guided: False
-  model_runner: default
+  model_runner: SelfConditioning
   cautious: False
   align_motif: True
   symmetric_self_cond: True
@@ -21,10 +21,10 @@ inference:
   deterministic: False
   trb_save_ckpt_path: null
   schedule_directory_path: null
-  model_directory_path: null
+  ckpt_path: last.ckpt
 
 contigmap:
-  contigs: null
+  contigs: [150-150]
   inpaint_seq: null
   inpaint_str: null
   provide_seq: null

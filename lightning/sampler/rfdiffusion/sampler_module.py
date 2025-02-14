@@ -21,7 +21,7 @@ class rfdiffusion_Sampler:
             make_deterministic()
         self.conf = conf
 
-        self.sampler = iu.sampler_selector(conf)
+        self.selected_sampler = iu.sampler_selector(conf)
 
         # Check for available GPU and print result of check
         if torch.cuda.is_available():
@@ -33,28 +33,28 @@ class rfdiffusion_Sampler:
             self.log.info("////////////////////////////////////////////////")
 
         # Loop over number of designs to sample.
-        design_startnum = self.sampler.inf_conf.design_startnum
+        design_startnum = self.selected_sampler.inf_conf.design_startnum
 
 
 
 
     def run_sampling(self):
-        for i_des in range(self.sampler.inf_conf.num_designs):
+        for i_des in range(self.selected_sampler.inf_conf.num_designs):
             if self.conf.inference.deterministic:
                 make_deterministic(i_des)
 
             start_time = time.time()
-            out_prefix = f"{self.sampler.inf_conf.output_prefix}_{i_des}"
+            out_prefix = f"{self.selected_sampler.inf_conf.output_prefix}_{i_des}"
             self.log.info(f"Making design {out_prefix}")
 
             # Duplicated PDB File
-            if self.sampler.inf_conf.cautious and os.path.exists(out_prefix + ".pdb"):
+            if self.selected_sampler.inf_conf.cautious and os.path.exists(out_prefix + ".pdb"):
                 self.log.info(
                     f"(cautious mode) Skipping this design because {out_prefix}.pdb already exists."
                 )
                 continue
 
-            x_init, seq_init = self.sampler.sample_init()
+            x_init, seq_init = self.selected_sampler.sample_init()
             denoised_xyz_stack = []
             px0_xyz_stack = []
             seq_stack = []
@@ -63,9 +63,9 @@ class rfdiffusion_Sampler:
             x_t = torch.clone(x_init)
             seq_t = torch.clone(seq_init)
             # Loop over number of reverse diffusion time steps.
-            for t in range(int(self.sampler.t_step_input), self.sampler.inf_conf.final_step - 1, -1):
-                px0, x_t, seq_t, plddt = self.sampler.sample_step(
-                    t=t, x_t=x_t, seq_init=seq_t, final_step=self.sampler.inf_conf.final_step
+            for t in range(int(self.selected_sampler.t_step_input), self.selected_sampler.inf_conf.final_step - 1, -1):
+                px0, x_t, seq_t, plddt = self.selected_sampler.sample_step(
+                    t=t, x_t=x_t, seq_init=seq_t, final_step=self.selected_sampler.inf_conf.final_step
                 )
                 px0_xyz_stack.append(px0)
                 denoised_xyz_stack.append(x_t)
@@ -111,27 +111,27 @@ class rfdiffusion_Sampler:
                 out,
                 denoised_xyz_stack[0, :, :4],
                 final_seq,
-                self.sampler.binderlen,
-                chain_idx=self.sampler.chain_idx,
+                self.selected_sampler.binderlen,
+                chain_idx=self.selected_sampler.chain_idx,
                 bfacts=bfacts,
             )
 
             # run metadata
             trb = dict(
-                config=OmegaConf.to_container(self.sampler._conf, resolve=True),
+                config=OmegaConf.to_container(self.selected_sampler._conf, resolve=True),
                 plddt=plddt_stack.cpu().numpy(),
                 device=torch.cuda.get_device_name(torch.cuda.current_device())
                 if torch.cuda.is_available()
                 else "CPU",
                 time=time.time() - start_time,
             )
-            if hasattr(self.sampler, "contig_map"):
-                for key, value in self.sampler.contig_map.get_mappings().items():
+            if hasattr(self.selected_sampler, "contig_map"):
+                for key, value in self.selected_sampler.contig_map.get_mappings().items():
                     trb[key] = value
             with open(f"{out_prefix}.trb", "wb") as f_out:
                 pickle.dump(trb, f_out)
 
-            if self.sampler.inf_conf.write_trajectory:
+            if self.selected_sampler.inf_conf.write_trajectory:
                 # trajectory pdbs
                 traj_prefix = (
                         os.path.dirname(out_prefix) + "/traj/" + os.path.basename(out_prefix)
@@ -146,7 +146,7 @@ class rfdiffusion_Sampler:
                     final_seq.squeeze(),
                     use_hydrogens=False,
                     backbone_only=False,
-                    chain_ids=self.sampler.chain_idx,
+                    chain_ids=self.selected_sampler.chain_idx,
                 )
 
                 out = f"{traj_prefix}_pX0_traj.pdb"
@@ -157,7 +157,7 @@ class rfdiffusion_Sampler:
                     final_seq.squeeze(),
                     use_hydrogens=False,
                     backbone_only=False,
-                    chain_ids=self.sampler.chain_idx,
+                    chain_ids=self.selected_sampler.chain_idx,
                 )
 
             self.log.info(f"Finished design in {(time.time() - start_time) / 60:.2f} minutes")
