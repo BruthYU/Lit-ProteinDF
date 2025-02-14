@@ -1,5 +1,6 @@
 # @package _global_
 method_name: rfdiffusion
+is_training: True
 inference:
   input_pdb: null
   num_designs: 10
@@ -12,7 +13,7 @@ inference:
   output_dir: ./rfdiffusion_outputs/
   write_trajectory: True
   scaffold_guided: False
-  model_runner: SelfConditioning
+  model_runner: default
   cautious: False
   align_motif: True
   symmetric_self_cond: True

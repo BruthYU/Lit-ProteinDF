@@ -1,3 +1,4 @@
+import hydra.utils
 import torch
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -18,7 +19,7 @@ import os
 from lightning.model.rfdiffusion.model_input_logger import pickle_function_call
 import sys
 
-SCRIPT_DIR=os.path.dirname(os.path.realpath(__file__))
+HYDRA_DIR=hydra.utils.get_original_cwd()
 
 TOR_INDICES  = util.torsion_indices
 TOR_CAN_FLIP = util.torsion_can_flip
@@ -51,7 +52,7 @@ class Sampler:
             self.device = torch.device('cuda')
         else:
             self.device = torch.device('cpu')
-        needs_model_reload = not self.initialized or conf.inference.ckpt_override_path != self._conf.inference.ckpt_override_path
+        needs_model_reload = not self.initialized
 
         # Assign config to Sampler
         self._conf = conf
@@ -59,37 +60,35 @@ class Sampler:
         ################################
         ### Select Appropriate Model ###
         ################################
-
-        if conf.inference.model_directory_path is not None:
-            model_directory = conf.inference.model_directory_path
+        if self._conf.is_training:
+            model_directory = f"{HYDRA_DIR}/resource/rfdiffusion/official_ckpts"
+            print("WARNING: Official checkpoints will be loaded for fine-tuning.")
         else:
-            model_directory = f"{SCRIPT_DIR}/../../models"
+            assert conf.inference.model_directory_path is not None, "model_directory_path must be specified in the inference mode."
+            model_directory = conf.inference.model_directory_path
+            print("WARNING: Fine-tuned checkpoint will be loaded since inference.model_directory_path is specified.")
 
         print(f"Reading models from {model_directory}")
 
         # Initialize inference only helper objects to Sampler
-        if conf.inference.ckpt_override_path is not None:
-            self.ckpt_path = conf.inference.ckpt_override_path
-            print("WARNING: You're overriding the checkpoint path from the defaults. Check that the model you're providing can run with the inputs you're providing.")
-        else:
-            if conf.contigmap.inpaint_seq is not None or conf.contigmap.provide_seq is not None or conf.contigmap.inpaint_str:
-                # use model trained for inpaint_seq
-                if conf.contigmap.provide_seq is not None:
-                    # this is only used for partial diffusion
-                    assert conf.diffuser.partial_T is not None, "The provide_seq input is specifically for partial diffusion"
-                if conf.scaffoldguided.scaffoldguided:
-                    self.ckpt_path = f'{model_directory}/InpaintSeq_Fold_ckpt.pt'
-                else:
-                    self.ckpt_path = f'{model_directory}/InpaintSeq_ckpt.pt'
-            elif conf.ppi.hotspot_res is not None and conf.scaffoldguided.scaffoldguided is False:
-                # use complex trained model
-                self.ckpt_path = f'{model_directory}/Complex_base_ckpt.pt'
-            elif conf.scaffoldguided.scaffoldguided is True:
-                # use complex and secondary structure-guided model
-                self.ckpt_path = f'{model_directory}/Complex_Fold_base_ckpt.pt'
+        if conf.contigmap.inpaint_seq is not None or conf.contigmap.provide_seq is not None or conf.contigmap.inpaint_str:
+            # use model trained for inpaint_seq
+            if conf.contigmap.provide_seq is not None:
+                # this is only used for partial diffusion
+                assert conf.diffuser.partial_T is not None, "The provide_seq input is specifically for partial diffusion"
+            if conf.scaffoldguided.scaffoldguided:
+                self.ckpt_path = f'{model_directory}/InpaintSeq_Fold_ckpt.pt'
             else:
-                # use default model
-                self.ckpt_path = f'{model_directory}/Base_ckpt.pt'
+                self.ckpt_path = f'{model_directory}/InpaintSeq_ckpt.pt'
+        elif conf.ppi.hotspot_res is not None and conf.scaffoldguided.scaffoldguided is False:
+            # use complex trained model
+            self.ckpt_path = f'{model_directory}/Complex_base_ckpt.pt'
+        elif conf.scaffoldguided.scaffoldguided is True:
+            # use complex and secondary structure-guided model
+            self.ckpt_path = f'{model_directory}/Complex_Fold_base_ckpt.pt'
+        else:
+            # use default model
+            self.ckpt_path = f'{model_directory}/Base_ckpt.pt'
         # for saving in trb file:
         assert self._conf.inference.trb_save_ckpt_path is None, "trb_save_ckpt_path is not the place to specify an input model. Specify in inference.ckpt_override_path"
         self._conf['inference']['trb_save_ckpt_path']=self.ckpt_path
@@ -119,10 +118,8 @@ class Sampler:
         self.diffuser_conf = self._conf.diffuser
         self.preprocess_conf = self._conf.preprocess
 
-        if conf.inference.schedule_directory_path is not None:
-            schedule_directory = conf.inference.schedule_directory_path
-        else:
-            schedule_directory = f"{SCRIPT_DIR}/../../schedules"
+
+        schedule_directory = f"{HYDRA_DIR}/data/rfdiffusion/.cache"
 
         # Check for cache schedule
         if not os.path.exists(schedule_directory):
@@ -147,8 +144,7 @@ class Sampler:
         
         if self.inf_conf.input_pdb is None:
             # set default pdb
-            script_dir=os.path.dirname(os.path.realpath(__file__))
-            self.inf_conf.input_pdb=os.path.join(script_dir, '../../examples/input_pdbs/1qys.pdb')
+            self.inf_conf.input_pdb=os.path.join(HYDRA_DIR, 'resource/rfdiffusion/input_pdbs/1qys.pdb')
         self.target_feats = iu.process_target(self.inf_conf.input_pdb, parse_hetatom=True, center=False)
         self.chain_idx = None
 

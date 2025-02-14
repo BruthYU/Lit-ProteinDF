@@ -1,5 +1,5 @@
 import torch
-from rfdiffusion.potentials import potentials as potentials
+from lightning.model.rfdiffusion.potentials import potentials as potentials
 import numpy as np 
 
 

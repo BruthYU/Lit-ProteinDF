@@ -134,6 +134,7 @@ def _process_csv_row(csv, processed_file_path):
         "atom37_pos": chain_feats["all_atom_positions"],
         "atom37_mask": chain_feats["all_atom_mask"],
         "atom14_pos": chain_feats["atom14_gt_positions"],
+        "atom14_mask": chain_feats["atom14_gt_exists"],
         "rigidgroups_0": chain_feats["rigidgroups_gt_frames"],
         "torsion_angles_sin_cos": chain_feats["torsion_angles_sin_cos"],
     }
@@ -165,8 +166,8 @@ def _rog_quantile_curve(df, quantile, eval_x):
 
 
 class BuildCache:
-    def __init__(self, data_conf, is_training):
-        self.is_training = is_training
+    def __init__(self, data_conf):
+
         self.data_conf = data_conf
         self.cache_path = data_conf.cache_path
         self._log = logging.getLogger(__name__)
@@ -220,26 +221,9 @@ class BuildCache:
 
     def _create_split(self, pdb_csv):
         # Training or validation specific logic.
-        if self.is_training:
-            self.csv = pdb_csv
-            self._log.info(f"Training: {len(self.csv)} examples")
-        else:
-            all_lengths = np.sort(pdb_csv.modeled_seq_len.unique())
-            length_indices = (len(all_lengths) - 1) * np.linspace(
-                0.0, 1.0, self.data_conf.num_eval_lengths
-            )
-            length_indices = length_indices.astype(int)
-            eval_lengths = all_lengths[length_indices]
-            eval_csv = pdb_csv[pdb_csv.modeled_seq_len.isin(eval_lengths)]
-            # Fix a random seed to get the same split each time.
-            eval_csv = eval_csv.groupby("modeled_seq_len").sample(
-                self.data_conf.samples_per_eval_length, replace=True, random_state=123
-            )
-            eval_csv = eval_csv.sort_values("modeled_seq_len", ascending=False)
-            self.csv = eval_csv
-            self._log.info(
-                f"Validation: {len(self.csv)} examples with lengths {eval_lengths}"
-            )
+        self.csv = pdb_csv
+        self._log.info(f"Training: {len(self.csv)} examples")
+
 
     def _build_dataset_cache_v2(self):
         print(
@@ -306,7 +290,7 @@ class BuildCache:
 if __name__ == '__main__':
     from omegaconf import OmegaConf
     conf = OmegaConf.load('./config.yaml')
-    cache_instance = BuildCache(conf, is_training=True)
+    cache_instance = BuildCache(conf)
     cache_instance._build_dataset_cache_v2()
     pass
 
