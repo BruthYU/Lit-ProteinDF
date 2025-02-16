@@ -140,3 +140,36 @@ scaffoldguided:
   target_adj: null
   mask_loops: True
   contig_crop: null
+
+
+experiment:
+  # Lightning Trainer Settings
+  strategy: ddp_find_unused_parameters_true
+  use_distributed_sampler: False
+  check_val_every_n_epoch: 4
+  num_epoch: 500
+  use_wandb: False
+  ckpt_freq: 10
+  lr_scheduler: step
+  monitor: train_loss
+
+
+
+  # Experiment metadata
+  seed: 111
+  name: baseline
+  run_id: null
+
+
+
+  # Training arguments
+  log_freq: 1000
+  batch_size: 8
+  steps_per_epoch: null
+  num_loader_workers: 5
+
+  weight_decay: 0
+  max_squared_res: 500000
+  prefetch_factor: 100
+  use_gpu: False
+  train_sample_mode: time_batch

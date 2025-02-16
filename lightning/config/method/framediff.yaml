@@ -1,4 +1,4 @@
-
+# @package _global_
 method_name: framediff
 dataset:
   cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
