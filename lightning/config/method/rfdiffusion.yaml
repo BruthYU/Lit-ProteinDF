@@ -1,6 +1,10 @@
 # @package _global_
 method_name: rfdiffusion
 is_training: True
+
+dataset:
+  cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
+
 inference:
   input_pdb: null
   num_designs: 10

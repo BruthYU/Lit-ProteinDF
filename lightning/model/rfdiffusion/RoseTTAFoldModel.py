@@ -73,6 +73,7 @@ class RoseTTAFoldModule(nn.Module):
 
         B, N, L = msa_latent.shape[:3]
         # Get embeddings
+        # msa_latent:(1,1,L,256) pair:(1,L,L,128)
         msa_latent, pair, state = self.latent_emb(msa_latent, seq, idx)
         msa_full = self.full_emb(msa_full, seq, idx)
 
@@ -99,6 +100,7 @@ class RoseTTAFoldModule(nn.Module):
         
         # Predict coordinates from given inputs
         is_frozen_residue = motif_mask if self.freeze_track_motif else torch.zeros_like(motif_mask).bool()
+        # msa:(1,1,L,256) pair:(1,1,L128) R:(40,1,L,3,3) T:(40,1,L,3) alpha_s:(40,1,L,10,2) state(1,L,64) 40 is pre-defined
         msa, pair, R, T, alpha_s, state = self.simulator(seq, msa_latent, msa_full, pair, xyz[:,:,:3],
                                                          state, idx, use_checkpoint=use_checkpoint,
                                                          motif_mask=is_frozen_residue)
@@ -115,7 +117,8 @@ class RoseTTAFoldModule(nn.Module):
         lddt = self.lddt_pred(state)
 
         if return_infer:
-            # get last structure
+        # if False:
+            # get last structure xyz:(1,L,3,3)
             xyz = einsum('bnij,bnaj->bnai', R[-1], xyz[:,:,:3]-xyz[:,:,1].unsqueeze(-2)) + T[-1].unsqueeze(-2)
             
             # get scalar plddt
@@ -128,13 +131,15 @@ class RoseTTAFoldModule(nn.Module):
             return msa[:,0], pair, xyz, state, alpha_s[-1], logits_aa.permute(0,2,1), pred_lddt
 
         #
-        # predict distogram & orientograms
+        # predict distogram & orientograms logits:[logits_dist:(1,37,L,L), logits_omega:(1,37,L,L), logits_theta:(1,37,L,L), logits_phi:(1,19,150,150)]
         logits = self.c6d_pred(pair)
         
         # predict experimentally resolved or not
+        # logits_exp (1,L)
         logits_exp = self.exp_pred(msa[:,0], state)
         
         # get all intermediate bb structures
+        # xyz:(40,1,L,3,3)
         xyz = einsum('rbnij,bnaj->rbnai', R, xyz[:,:,:3]-xyz[:,:,1].unsqueeze(-2)) + T.unsqueeze(-2)
 
         return logits, logits_aa, logits_exp, xyz, alpha_s, lddt

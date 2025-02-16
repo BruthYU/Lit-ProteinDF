@@ -3,7 +3,7 @@ import os
 from omegaconf import DictConfig
 import torch
 import torch.nn.functional as nn
-from lightning.model.rfdiffusion.diffusion import get_beta_schedule
+from lightning.data.rfdiffusion.diffusion import get_beta_schedule
 from scipy.spatial.transform import Rotation as scipy_R
 from lightning.model.rfdiffusion.util import rigid_from_3_points
 from lightning.model.rfdiffusion.util_module import ComputeAllAtomCoords
@@ -433,6 +433,10 @@ class Denoise:
             align_motif (bool): Align the model's prediction of the motif to the input motif
 
             include_motif_sidechains (bool): Provide sidechains of the fixed motif to the model
+
+
+        Shapes:
+            xt: (L,14,3)    px0: (L,14,3)   ca_deltas: (L,3)    diffusion_mask: (L) frame_next: (L,3,3)
         """
 
         get_allatom = ComputeAllAtomCoords().to(device=xt.device)
@@ -696,7 +700,7 @@ class BlockAdjacency:
         # either list or path to .txt file with list of scaffolds
         if self.conf.scaffoldguided.scaffold_list is not None:
             if type(self.conf.scaffoldguided.scaffold_list) == list:
-                self.scaffold_list = scaffold_list
+                self.scaffold_list = self.conf.scaffoldguided.scaffold_list
             elif self.conf.scaffoldguided.scaffold_list[-4:] == ".txt":
                 # txt file with list of ids
                 list_from_file = []

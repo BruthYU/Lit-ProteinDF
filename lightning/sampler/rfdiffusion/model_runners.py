@@ -4,7 +4,7 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from lightning.model.rfdiffusion.RoseTTAFoldModel import RoseTTAFoldModule
 from lightning.model.rfdiffusion.kinematics import get_init_xyz, xyz_to_t2d
-from lightning.model.rfdiffusion.diffusion import Diffuser
+from lightning.data.rfdiffusion.diffusion import Diffuser
 from preprocess.tools.chemical import seq2chars
 from lightning.model.rfdiffusion.util_module import ComputeAllAtomCoords
 from lightning.model.rfdiffusion.contigs import ContigMap
@@ -143,7 +143,8 @@ class Sampler:
         
         if self.inf_conf.input_pdb is None:
             # set default pdb
-            self.inf_conf.input_pdb=os.path.join(HYDRA_DIR, 'resource/rfdiffusion/input_pdbs/1qys.pdb')
+            self.inf_conf.input_pdb = '1qys.pdb'
+        self.inf_conf.input_pdb =os.path.join(HYDRA_DIR, 'resource/rfdiffusion/input_pdbs', self.inf_conf.input_pdb)
         self.target_feats = iu.process_target(self.inf_conf.input_pdb, parse_hetatom=True, center=False)
         self.chain_idx = None
 
@@ -656,6 +657,7 @@ class SelfConditioning(Sampler):
         ####################
 
         with torch.no_grad():
+            # msa[:,0], pair, xyz, state, alpha_s[-1], logits_aa.permute(0,2,1), pred_lddt
             msa_prev, pair_prev, px0, state_prev, alpha, logits, plddt = self.model(msa_masked,
                                 msa_full,
                                 seq_in,
