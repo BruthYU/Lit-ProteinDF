@@ -118,12 +118,11 @@ class Sampler:
         self.preprocess_conf = self._conf.preprocess
 
 
-        schedule_directory = f"{HYDRA_DIR}/data/rfdiffusion/.cache"
-
+        schedule_directory = self._conf.diffuser.cache_dir
         # Check for cache schedule
         if not os.path.exists(schedule_directory):
             os.mkdir(schedule_directory)
-        self.diffuser = Diffuser(**self._conf.diffuser, cache_dir=schedule_directory)
+        self.diffuser = Diffuser(**self._conf.diffuser)
 
         ###########################
         ### Initialise Symmetry ###

@@ -562,7 +562,7 @@ class Diffuser:
         """
         Parameters:
 
-            T (int, required): Number of steps in the schedule
+            T (int, required): Number of steps in the schedule (default 50)
 
             b_0 (float, required): Starting variance for Euclidean schedule
 
@@ -600,8 +600,8 @@ class Diffuser:
     def diffuse_pose(
         self,
         xyz,
-        seq,
-        atom_mask,
+        seq=None,
+        atom_mask=None,
         include_motif_sidechains=True,
         diffusion_mask=None,
         t_list=None,

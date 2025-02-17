@@ -3,7 +3,11 @@ method_name: rfdiffusion
 is_training: True
 
 dataset:
-  cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
+    # cache_dir: ${hydra:runtime.cwd}/../preprocess/.cache/jsonl
+    cache_dir: ../../../preprocess/.cache/jsonl
+    # cluster_path: ${hydra:runtime.cwd}/data/clusters-by-entity-30.txt
+    cluster_path: ../clusters-by-entity-30.txt
+    seed: 123
 
 inference:
   input_pdb: null
@@ -74,6 +78,9 @@ model:
   use_motif_timestep: False
 
 diffuser:
+  # cache_dir: ${hydra:runtime.cwd}/data/rfdiffusion/.cache/
+  cache_dir: .cache
+
   T: 50
   b_0: 1e-2
   b_T: 7e-2

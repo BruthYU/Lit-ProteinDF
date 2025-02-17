@@ -6,15 +6,16 @@ import tree
 import torch
 import numpy as np
 import lightning.data.rfdiffusion.dataloader as du
-from lightning.data.rfdiffusion import diffusion
+from lightning.data.rfdiffusion.diffusion import Diffuser
 import pandas as pd
 import os
 import math
 import random
 import logging
-
+from omegaconf import OmegaConf
+import torch.nn.functional as F
 def _process_chain_feats(chain_feats):
-    xyz = chain_feats['atom14_pos']
+    xyz = chain_feats['atom14_pos'].float()
     res_plddt = chain_feats['b_factors'][:, 1]
     res_mask = torch.tensor(chain_feats['res_mask']).int()
     return {
@@ -94,10 +95,10 @@ class rfdiffusion_Dataset(data.Dataset):
         self.data_conf = data_conf
         self.diffuser_conf = diffuser_conf
         self.is_training = is_training
-        # self.diffuser = se3_diffuser.SE3Diffuser(frame_conf)
+        self.diffuser = Diffuser(**self.diffuser_conf)
 
         self._rng = np.random.default_rng(seed=self.data_conf.seed)
-        self._pdb_to_cluster = _read_clusters(self.diffuser_conf.cluster_path)
+        self._pdb_to_cluster = _read_clusters(self.data_conf.cluster_path)
         self._max_cluster = max(self._pdb_to_cluster.values())
         self._missing_pdbs = 0
 
@@ -121,8 +122,16 @@ class rfdiffusion_Dataset(data.Dataset):
     def __getitem__(self, idx):
         chain_feats, gt_bb_rigid, pdb_name, csv_row = self.lmdb_cache.get_cache_csv_row(idx)
         feats = self.process_chain_feats(chain_feats)
+        feats['input_seq_onehot'] = F.one_hot(feats['aatype'], num_classes=22)
+        fa_stack, xyz_true = self.diffuser.diffuse_pose(feats['xyz'])
 
-        if self.data_conf.add_plddt_mask:
-            _add_plddt_mask(feats, self.data_conf.min_plddt_threshold)
-        else:
-            feats['plddt_mask'] = torch.ones_like(feats['res_mask'])
+        return feats
+
+if __name__ == '__main__':
+    conf = OmegaConf.load('../../config/method/rfdiffusion.yaml')
+    data_conf = conf.dataset
+    diffuser_conf = conf.diffuser
+    lmdb_cache = LMDB_Cache(data_conf)
+    rf_dataset = rfdiffusion_Dataset(lmdb_cache, "hallucination", data_conf, diffuser_conf)
+    feat_1 = rf_dataset[1]
+    pass
