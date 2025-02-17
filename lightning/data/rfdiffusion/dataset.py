@@ -13,6 +13,30 @@ import math
 import random
 import logging
 
+def _process_chain_feats(chain_feats):
+    xyz = chain_feats['atom14_pos']
+    res_plddt = chain_feats['b_factors'][:, 1]
+    res_mask = torch.tensor(chain_feats['res_mask']).int()
+    return {
+        'aatype': chain_feats['aatype'],
+        'xyz': xyz,
+        'res_mask': res_mask,
+        'chain_idx': chain_feats["chain_idx"],
+        'res_idx': chain_feats["seq_idx"],
+    }
+
+def _add_plddt_mask(feats, plddt_threshold):
+    feats['plddt_mask'] = torch.tensor(
+        feats['res_plddt'] > plddt_threshold).int()
+
+def _read_clusters(cluster_path):
+    pdb_to_cluster = {}
+    with open(cluster_path, "r") as f:
+        for i,line in enumerate(f):
+            for chain in line.split(' '):
+                pdb = chain.split('_')[0]
+                pdb_to_cluster[pdb.upper()] = i
+    return pdb_to_cluster
 
 class LMDB_Cache:
     def __init__(self, data_conf):
@@ -59,13 +83,46 @@ class LMDB_Cache:
 class rfdiffusion_Dataset(data.Dataset):
     def __init__(self,
                  lmdb_cache,
-                 data_conf = None,
-                 frame_conf = None,
+                 task,
+                 data_conf= None,
+                 diffuser_conf= None,
                  is_training= True):
         super().__init__()
         assert lmdb_cache, "No cache to build dataset."
         self.lmdb_cache = lmdb_cache
         self.csv = self.lmdb_cache.csv
         self.data_conf = data_conf
+        self.diffuser_conf = diffuser_conf
         self.is_training = is_training
         # self.diffuser = se3_diffuser.SE3Diffuser(frame_conf)
+
+        self._rng = np.random.default_rng(seed=self.data_conf.seed)
+        self._pdb_to_cluster = _read_clusters(self.diffuser_conf.cluster_path)
+        self._max_cluster = max(self._pdb_to_cluster.values())
+        self._missing_pdbs = 0
+
+        def cluster_lookup(pdb):
+            pdb = pdb.split(".")[0].upper()
+            if pdb not in self._pdb_to_cluster:
+                self._pdb_to_cluster[pdb] = self._max_cluster + 1
+                self._max_cluster += 1
+                self._missing_pdbs += 1
+            return self._pdb_to_cluster[pdb]
+
+        self.csv['cluster'] = self.csv['pdb_name'].map(cluster_lookup)
+        self._all_clusters = dict(
+            enumerate(self.csv['cluster'].unique().tolist()))
+        self._num_clusters = len(self._all_clusters)
+
+
+    def process_chain_feats(self, chain_feats):
+        return _process_chain_feats(chain_feats)
+
+    def __getitem__(self, idx):
+        chain_feats, gt_bb_rigid, pdb_name, csv_row = self.lmdb_cache.get_cache_csv_row(idx)
+        feats = self.process_chain_feats(chain_feats)
+
+        if self.data_conf.add_plddt_mask:
+            _add_plddt_mask(feats, self.data_conf.min_plddt_threshold)
+        else:
+            feats['plddt_mask'] = torch.ones_like(feats['res_mask'])

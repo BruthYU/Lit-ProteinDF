@@ -14,6 +14,7 @@ class rfdiffusion_Lightning_Datamodule(pl.LightningDataModule):
     def __init__(self, conf):
         super().__init__()
         self.save_hyperparameters()
+        self.conf = conf
         self.data_conf = conf.dataset
 
         # for test
@@ -38,7 +39,7 @@ class rfdiffusion_Lightning_Datamodule(pl.LightningDataModule):
             self.lmdb_cache = self.instancialize_module(module=self.cache_module, data_conf=self.data_conf)
             '''Train Dataset & Sampler'''
             self.trainset = self.instancialize_module(module=self.data_module, lmdb_cache=self.lmdb_cache, is_training=True,
-                                                      frame_conf=self.frame_conf, data_conf=self.data_conf)
+                                                      frame_conf=self.frame_conf, conf=self.data_conf)
 
             '''Valid Dataset & Sampler'''
             self.valset = self.instancialize_module(module=self.data_module, lmdb_cache=self.lmdb_cache, is_training=False,

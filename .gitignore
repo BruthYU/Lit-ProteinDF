@@ -22,3 +22,4 @@ evaluate/eval_data
 /lightning/resource/rfdiffusion/official_ckpts/Complex_Fold_base_ckpt.pt
 /lightning/resource/rfdiffusion/official_ckpts/InpaintSeq_ckpt.pt
 /lightning/resource/rfdiffusion/official_ckpts/InpaintSeq_Fold_ckpt.pt
+/lightning/data/rfdiffusion/diffusion_backup.py
