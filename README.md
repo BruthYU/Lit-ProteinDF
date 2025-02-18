@@ -2,15 +2,14 @@
 
 
 ## A Collection of Diffusion Models for Protein Backbone Generation based on Pytorch Lightning⚡.
-
+</div>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](https://opensource.org/licenses/MIT)
 ![](https://img.shields.io/badge/Training-Supported-green)
 ![Static Badge](https://img.shields.io/badge/Pytorch-Lightning-yellow)
 ![Static Badge](https://img.shields.io/badge/Config-Hydra-blue)
-
 ![GitHub Repo stars](https://img.shields.io/github/stars/BruthYU/Lit-ProteinDF?style=social)
-</div>
+
 
 ## Integrated Methods
 | **Name**    | **Paper**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | **Venue** |  **Date**  |                                                                               **Code**                                                                               |
