@@ -93,6 +93,19 @@ def rigid_from_3_points(N, Ca, C, non_ideal=False, eps=1e-8):
 
     return R, Ca
 
+def rigid_from_xyz(xyz):
+    '''
+    xyz: (num_res,27,3,3)
+    '''
+    xyz = xyz
+    N = xyz[None, :, 0, :]
+    Ca = xyz[None, :, 1, :] # [1, num_res, 3, 3]
+    C = xyz[None, :, 2, :]
+    # scipy rotation object for true coordinates
+    R_true, Ca = rigid_from_3_points(N, Ca, C)
+    R_true = R_true[0]
+    Ca = Ca[0]
+    return R_true, Ca
 
 def get_tor_mask(seq, torsion_indices, mask_in=None):
     B, L = seq.shape[:2]

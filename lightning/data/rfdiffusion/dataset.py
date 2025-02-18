@@ -13,6 +13,7 @@ import math
 import random
 import logging
 from omegaconf import OmegaConf
+import lightning.model.rfdiffusion.util as mu
 import torch.nn.functional as F
 def _process_chain_feats(chain_feats):
     xyz = chain_feats['atom14_pos'].float()
@@ -119,11 +120,27 @@ class rfdiffusion_Dataset(data.Dataset):
     def process_chain_feats(self, chain_feats):
         return _process_chain_feats(chain_feats)
 
+
     def __getitem__(self, idx):
+
         chain_feats, gt_bb_rigid, pdb_name, csv_row = self.lmdb_cache.get_cache_csv_row(idx)
         feats = self.process_chain_feats(chain_feats)
         feats['input_seq_onehot'] = F.one_hot(feats['aatype'], num_classes=22)
-        fa_stack, xyz_true = self.diffuser.diffuse_pose(feats['xyz'])
+
+
+        # t = random.choice(range(1, self.diffuser_conf.T+1))
+        t = 1
+        t_list = np.arange(1, t+1)
+        fa_stack, xyz_true = self.diffuser.diffuse_pose(feats['xyz'], t_list=t_list)
+        x_0 = torch.zeros((len(xyz_true), 27, 3))
+        x_0[:, :14, :] = xyz_true
+
+        feats['t'] = t
+        feats['x_t'] = fa_stack[t-1]
+        feats['x_t_1'] = x_0 if t == 1 else fa_stack[t-2]
+        feats['frame_t_1'], feats['Ca_t_1'] = mu.rigid_from_xyz(feats['x_t_1'])
+
+
 
         return feats
 
